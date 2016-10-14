@@ -1,0 +1,17 @@
+{
+  "name": "vpx-stream-displayer",
+  "description": "A JavaScript written ROS node to display VPX/WebM encoded data in HTML5 video element.",
+  "version": "0.0.1",
+  "main": "index.html",
+  "dependencies": {
+    "rosnodejs": "RethinkRobotics-opensource/rosnodejs#ae121f9"
+  },
+  "engines": {
+    "node": ">= 5.10.0"
+  },
+  "keywords": [
+    "ros-javascript",
+    "realsense"
+  ],
+  "author": "Jonathan Dong <jonathan.dong@intel.com>"
+}

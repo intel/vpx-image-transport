@@ -1,0 +1,13 @@
+<library path="lib/libvpx_image_transport">
+  <class name="image_transport/vpx_pub" type="vpx_image_transport::VPXPublisher" base_class_type="image_transport::PublisherPlugin">
+    <description>
+      This plugin publishes a video packet stream encoded using VP8/VP9.
+    </description>
+  </class>
+
+  <class name="image_transport/vpx_sub" type="vpx_image_transport::VPXSubscriber" base_class_type="image_transport::SubscriberPlugin">
+    <description>
+      This plugin decodes a video packet stream encoded using VP8/VP9.
+    </description>
+  </class>
+</library>
