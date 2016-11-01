@@ -1,4 +1,4 @@
-# VPX Image Transport
+# Image Transport for VPx
 
 An [image_transport](http://wiki.ros.org/image_transport) plugin to tranport [sensor_msg::Image](http://docs.ros.org/api/sensor_msgs/html/msg/Image.html) data via [VP8/VP9](https://github.com/webmproject/libvpx) encoded data stream within the [WebM](http://www.webmproject.org) container.
 
@@ -21,19 +21,19 @@ WebM is an open source software project which is dedicated to develop a high-qua
 
 ### Install libvpx
 
-Before cloning the project, you need to install `libvpx-dev` to make it compile:
+Before building the project, you need to install `libvpx-dev` to make it compile:
 
 ```bash
 sudo apt-get install libvpx-dev
 ```
 
-### Install vpx_image_transport
+### Install Image Transport for VPx Plugin
 
 All you need to is to clone this repository into the `src` directory of your workspace and build it with `catkin_make`:
 
 ```bash
 cd ~/catkin_ws/src
-git clone <vpx_image_transport_repository_url>
+git clone <this_repository_url>
 cd ..
 catkin_make
 ```
@@ -44,7 +44,7 @@ catkin_make
 
 Firstly your ROS node should publish the `sensor_msg::Image` message through the image_transport. For more details on how to write your codes to publish through image_transport, please refer to the [image transport wiki](http://wiki.ros.org/image_transport).
 
-After you successfully hook up the `sensor_msg::Image` message with image_transport, the vpx_image_transport plugin will be loaded automatically by image_transport and the WebM/VPX encoded data stream will be published at `<image_topic_name>/vpx`.
+After you successfully hook up the `sensor_msg::Image` message with image_transport, the Image Transport for VPx plugin will be loaded automatically by image_transport and the WebM/VPX encoded data stream will be published at `<image_topic_name>/vpx`.
 
 ### Subscribe to WebM/VPX Data Stream
 
@@ -52,4 +52,4 @@ As browser / web application runtime has the ability to decode the WebM/VPX data
 
 ## License
 
-vpx_image_transport project is available under the BSD license. See the [LICENSE](LICENSE) file for more information.
+Image Transport for VPx project is available under the BSD license. See the [LICENSE](LICENSE) file for more information.
