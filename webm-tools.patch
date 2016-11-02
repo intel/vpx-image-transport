@@ -1,0 +1,185 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 90d6525..c73f978 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -6,26 +6,45 @@
+ ##  in the file PATENTS.  All contributing project authors may
+ ##  be found in the AUTHORS file in the root of the source tree.
+ cmake_minimum_required(VERSION 2.8)
+-project(WEBMTOOLS)
++project(webm-tools)
++
++include(ExternalProject)
+
+ set(WEBMTOOLS_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+-# TODO(tomfinegan): The libwebm source directory must be configurable.
+-set(LIBWEBM_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../libwebm")
+-# This is where LIBWEBM targets are built.
+-set(LIBWEBM_BUILD_DIR "${CMAKE_BINARY_DIR}/libwebm_build")
+-
+-# Libwebm section.
+-# Add the libwebm CMakeLists.txt and set the binary dir to allow access to
+-# libwebm build output.
+-add_subdirectory("${LIBWEBM_SRC_DIR}" "${LIBWEBM_BUILD_DIR}")
+-include_directories("${LIBWEBM_SRC_DIR}"
+-                    "${WEBMTOOLS_SRC_DIR}/shared")
+-
+-add_executable(webm_info
++
++ExternalProject_Add(libwebm
++  PREFIX libwebm
++  GIT_REPOSITORY https://github.com/webmproject/libwebm.git
++  GIT_TAG master
++  PATCH_COMMAND git apply ${CMAKE_CURRENT_SOURCE_DIR}/libwebm.patch
++  INSTALL_COMMAND ""
++)
++
++ExternalProject_Get_Property(libwebm source_dir binary_dir)
++include_directories(${source_dir})
++
++add_library(${PROJECT_NAME} SHARED
+   "${WEBMTOOLS_SRC_DIR}/shared/indent.cc"
+   "${WEBMTOOLS_SRC_DIR}/shared/indent.h"
++  "${WEBMTOOLS_SRC_DIR}/shared/webm_chunk_writer.cc"
++  "${WEBMTOOLS_SRC_DIR}/shared/webm_chunk_writer.h"
+   "${WEBMTOOLS_SRC_DIR}/shared/webm_endian.cc"
+   "${WEBMTOOLS_SRC_DIR}/shared/webm_endian.h"
+-  "${WEBMTOOLS_SRC_DIR}/webm_info/webm_info.cc")
++  "${WEBMTOOLS_SRC_DIR}/shared/webm_file.cc"
++  "${WEBMTOOLS_SRC_DIR}/shared/webm_file.h"
++  "${WEBMTOOLS_SRC_DIR}/shared/webm_incremental_reader.cc"
++  "${WEBMTOOLS_SRC_DIR}/shared/webm_incremental_reader.h"
++  "${WEBMTOOLS_SRC_DIR}/shared/webm_live_muxer.cc"
++  "${WEBMTOOLS_SRC_DIR}/shared/webm_live_muxer.h"
++  "${WEBMTOOLS_SRC_DIR}/shared/webm_constants.h"
++  "${WEBMTOOLS_SRC_DIR}/shared/webm_tools_types.h")
++
++add_dependencies(${PROJECT_NAME} libwebm)
++
++target_link_libraries(${PROJECT_NAME} LINK_PUBLIC
++  ${binary_dir}/libmkvmuxer.so
++  ${binary_dir}/libmkvparser.so
++  ${binary_dir}/libwebm_parser.so
++  ${binary_dir}/libwebm.so)
+
+-target_link_libraries(webm_info LINK_PUBLIC webm)
++install(TARGETS ${PROJECT_NAME} DESTINATION lib)
+diff --git a/libwebm.patch b/libwebm.patch
+new file mode 100644
+index 0000000..49cc7fc
+--- /dev/null
++++ b/libwebm.patch
+@@ -0,0 +1,64 @@
++diff --git a/CMakeLists.txt b/CMakeLists.txt
++index ad7bea4..0b84d2a 100644
++--- a/CMakeLists.txt
+++++ b/CMakeLists.txt
++@@ -18,7 +18,7 @@ option(ENABLE_WEBMINFO "Enables building webm_info." ON)
++ option(ENABLE_TESTS "Enables tests." OFF)
++ option(ENABLE_IWYU "Enables include-what-you-use support." OFF)
++ option(ENABLE_WERROR "Enable warnings as errors." OFF)
++-option(ENABLE_WEBM_PARSER "Enables new parser API." OFF)
+++option(ENABLE_WEBM_PARSER "Enables new parser API." ON)
++ set(GTEST_SRC_DIR "${LIBWEBM_SRC_DIR}/../googletest" CACHE PATH
++     "Path to Googletest git repository.")
++
++@@ -45,7 +45,7 @@ set(CMAKE_CXX_FLAGS "-D__STDC_LIMIT_MACROS ${CMAKE_CXX_FLAGS}")
++
++ # mkvmuxer section.
++ # TODO(tomfinegan): move to mkvmuxer/CMakeLists.txt
++-add_library(mkvmuxer STATIC
+++add_library(mkvmuxer SHARED
++             "${LIBWEBM_SRC_DIR}/mkvmuxer/mkvmuxer.cc"
++             "${LIBWEBM_SRC_DIR}/mkvmuxer/mkvmuxer.h"
++             "${LIBWEBM_SRC_DIR}/mkvmuxer/mkvmuxertypes.h"
++@@ -57,7 +57,7 @@ add_library(mkvmuxer STATIC
++
++ # mkvparser section.
++ # TODO(tomfinegan): move to mkvparser/CMakeLists.txt.
++-add_library(mkvparser STATIC
+++add_library(mkvparser SHARED
++             "${LIBWEBM_SRC_DIR}/mkvparser/mkvparser.cc"
++             "${LIBWEBM_SRC_DIR}/mkvparser/mkvparser.h"
++             "${LIBWEBM_SRC_DIR}/mkvparser/mkvreader.cc"
++@@ -71,7 +71,7 @@ add_library(mkvparser STATIC
++ # TODO(tomfinegan): add doxygen generation target.
++ if (ENABLE_WEBM_PARSER)
++ include_directories(webm_parser webm_parser/include)
++-add_library(webm_parser STATIC
+++add_library(webm_parser SHARED
++             "${LIBWEBM_SRC_DIR}/webm_parser/include/webm/buffer_reader.h"
++             "${LIBWEBM_SRC_DIR}/webm_parser/include/webm/callback.h"
++             "${LIBWEBM_SRC_DIR}/webm_parser/include/webm/dom_types.h"
++@@ -164,7 +164,7 @@ add_library(webm_parser STATIC
++ endif()
++
++ # Libwebm section.
++-add_library(webm STATIC
+++add_library(webm SHARED
++             "${LIBWEBM_SRC_DIR}/common/file_util.cc"
++             "${LIBWEBM_SRC_DIR}/common/file_util.h"
++             "${LIBWEBM_SRC_DIR}/common/hdr_util.cc"
++@@ -241,11 +241,13 @@ endif ()
++
++ if (ENABLE_WEBMTS)
++   # webmts (PES/TS support) library section.
++-  add_library(webmts
+++  add_library(webmts SHARED
++               "${LIBWEBM_SRC_DIR}/common/libwebm_util.cc"
++               "${LIBWEBM_SRC_DIR}/common/libwebm_util.h"
++               "${LIBWEBM_SRC_DIR}/common/video_frame.cc"
++               "${LIBWEBM_SRC_DIR}/common/video_frame.h"
+++              "${LIBWEBM_SRC_DIR}/common/file_util.cc"
+++              "${LIBWEBM_SRC_DIR}/common/file_util.h"
++               "${LIBWEBM_SRC_DIR}/m2ts/vpxpes2ts.cc"
++               "${LIBWEBM_SRC_DIR}/m2ts/vpxpes2ts.h"
++               "${LIBWEBM_SRC_DIR}/m2ts/vpxpes_parser.cc"
+diff --git a/shared/webm_chunk_writer.cc b/shared/webm_chunk_writer.cc
+index 527be6b..84e8de5 100644
+--- a/shared/webm_chunk_writer.cc
++++ b/shared/webm_chunk_writer.cc
+@@ -66,7 +66,6 @@ int32 WebMChunkWriter::Write(const void* ptr_buffer, uint32 buffer_length) {
+ void WebMChunkWriter::ElementStartNotify(uint64 element_id, int64 position) {
+   if (element_id == mkvmuxer::kMkvCluster) {
+     chunk_end_ = bytes_buffered_;
+-    fprintf(stdout, "chunk_end_=%lld position=%lld\n", chunk_end_, position);
+   }
+ }
+
+diff --git a/shared/webm_live_muxer.cc b/shared/webm_live_muxer.cc
+index b03057f..e9b3873 100644
+--- a/shared/webm_live_muxer.cc
++++ b/shared/webm_live_muxer.cc
+@@ -40,7 +40,7 @@ WebMLiveMuxer::WebMLiveMuxer()
+ WebMLiveMuxer::~WebMLiveMuxer() {
+ }
+
+-int WebMLiveMuxer::Init() {
++int WebMLiveMuxer::Init(unsigned max_cluster_duration) {
+   // Construct and Init |WebMChunkWriter|. It handles writes coming from
+   // libwebm.
+   ptr_writer_.reset(new (std::nothrow) WebMChunkWriter());  // NOLINT
+@@ -66,6 +66,7 @@ int WebMLiveMuxer::Init() {
+   }
+
+   ptr_segment_->set_mode(mkvmuxer::Segment::kLive);
++  ptr_segment_->set_max_cluster_duration(max_cluster_duration * 1000000ULL);
+
+   // Set segment info fields.
+   using mkvmuxer::SegmentInfo;
+diff --git a/shared/webm_live_muxer.h b/shared/webm_live_muxer.h
+index b7066e2..3ee8912 100644
+--- a/shared/webm_live_muxer.h
++++ b/shared/webm_live_muxer.h
+@@ -101,7 +101,10 @@ class WebMLiveMuxer {
+
+   // Initializes libwebm for muxing in live mode. Returns |kSuccess| when
+   // successful.
+-  int Init();
++  // max_cluster_duration will set the cluster's max duration in miliseconds.
++  // The default value is set to 10ms to make the output of live muxer more like
++  // a live stream.
++  int Init(unsigned max_cluster_duration = 10);
+
+   // Adds an audio track to |ptr_segment_| and returns the track number [1-127].
+   // Returns |kAudioTrackAlreadyExists| when the audio track has already been

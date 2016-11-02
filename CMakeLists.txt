@@ -27,8 +27,9 @@ pkg_check_modules(PC_VPX REQUIRED vpx)
 
 ExternalProject_Add(webm-tools
   PREFIX third_party/webm-tools
-  GIT_REPOSITORY https://github.com/jondong/webm-tools.git
+  GIT_REPOSITORY https://github.com/webmproject/webm-tools.git
   GIT_TAG master
+  PATCH_COMMAND git apply ${CMAKE_CURRENT_SOURCE_DIR}/webm-tools.patch
   BUILD_COMMAND make -j8
 )
 ExternalProject_Get_Property(webm-tools binary_dir source_dir)
