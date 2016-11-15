@@ -1,0 +1,93 @@
+<html>
+  <head>
+    <title>RealSense vpx video displayer</title>
+  </head>
+  <body>
+    <div id='info'>Info</div>
+    <canvas id='displayCanvas' width='640' height='480'>
+    </canvas>
+    <script>
+    let canvas = document.getElementById('displayCanvas');
+    let info = document.getElementById('info');
+    let ctx = canvas.getContext('2d');
+    let count = 0;
+    let precount = 0;
+    let width = 640;
+    let height = 480;
+    let fps = 30;
+    let total = 0;
+    let totalPrev = 0;
+    let infoMsg;
+    let bandwidth = 0;
+    let ws;
+
+    function connectServer() {
+    let ws = new WebSocket('ws://'+location.host);
+      ws.binaryType = 'arraybuffer';
+      ws.onmessage = function(event) {
+      let time = new Date();
+      console.log('received data time:', time.getTime(), '--', time.toTimeString());      
+        if (event.data instanceof ArrayBuffer)
+          feedData(event.data);
+        else
+          handleStringMsg(event);
+      };
+    }
+    function handleStringMsg(event) {
+      try {
+        let msg = JSON.parse(event.data);
+        if (msg instanceof Object) {
+          width = msg.w;
+          height = msg.h;
+          canvas.width = width;
+          canvas.height = height;
+          fps = msg.fps;
+          console.log('------ canvas size:', msg);
+        }
+      } catch (e) {
+        console.log('Error: failed to extract json data: ', e);
+      }
+    }
+    function updateInfo() {
+      info.textContent = 'Expected width/height/fps:'+width+'*'+height+'-'+fps+' Actual network usage:'+bandwidth+'KB/s';
+    }
+    function feedData(data) {
+      total += data.byteLength;
+      draw(data);
+    };
+    function draw(imgData) {
+        "use strict";
+
+        var uInt8Array = new Uint8Array(imgData);
+        var i = uInt8Array.length;
+        var binaryString = [i];
+        while (i--) {
+            binaryString[i] = String.fromCharCode(uInt8Array[i]);
+        }
+        var data = binaryString.join('');
+        var base64 = window.btoa(data);
+
+        var img = new Image();
+        img.src = "data:image/jpeg;base64," + base64;
+        img.onload = function () {
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            count++;
+        };
+        img.onerror = function (stuff) {
+            console.log("Img Onerror:", stuff);
+        };
+    }
+    setInterval(function() {
+      let fps = count - precount;
+      console.log('----------- fps: ', fps);
+      precount = count;
+    },1000);
+    connectServer();
+    setInterval(function() {
+      bandwidth = (total-totalPrev)/1024;
+      totalPrev = total;
+      updateInfo();
+    }, 1000);
+    </script>    
+  </body>
+</html>

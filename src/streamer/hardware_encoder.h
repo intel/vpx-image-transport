@@ -5,6 +5,7 @@
 #ifndef YAMI_ENCODER_H
 #define YAMI_ENCODER_H
 
+#include <chrono>
 #include <boost/shared_ptr.hpp>
 #include <va/va.h>
 #include <VideoEncoderInterface.h>
@@ -25,7 +26,7 @@ public:
 
 private:
   void fillVideoFrame(VideoFrameRawData* frame, const cv::Mat& mat,
-                      int frame_width, int frame_height);
+                      int frame_width, int frame_height, int64_t time_stamp);
 
 private:
   boost::shared_ptr<YamiMediaCodec::IVideoEncoder> encoder_;
@@ -33,6 +34,7 @@ private:
   uint32_t max_output_buf_size_;
   uint32_t keyframe_forced_interval_;
   uint64_t frame_count_;
+  std::chrono::high_resolution_clock::time_point start_time_;
 };
 
 } // namespace vpx_streamer

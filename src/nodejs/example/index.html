@@ -3,12 +3,20 @@
     <title>RealSense vpx video displayer</title>
   </head>
   <body>
-    <video id='displayVideo' autoplay width='640' height='480'>
+    <div id='info'>Info</div>
+    <video id='displayVideo' autoplay>
     </video>
     <script>
     let displayVideo;
     let ms;
     let sourceBuffer;
+    let width = 640;
+    let height = 480;
+    let fps = 30;
+    let total = 0;
+    let totalPrev = 0;
+    let infoMsg;
+    let bandwidth = 0;
     function setupMediaSource() {
       const mimeType = 'video/webm; codecs="vp8"';
       if (!MediaSource.isTypeSupported(mimeType)) {
@@ -21,11 +29,14 @@
       sourceBuffer = null;
       ms.addEventListener('sourceopen', (e) => {
         sourceBuffer = ms.addSourceBuffer(mimeType);
-        let ws = new WebSocket('ws://10.238.156.118:8000');
+        console.log('---- connect to ', location.host);
+        let ws = new WebSocket('ws://'+location.host);
         ws.binaryType = 'arraybuffer';
         ws.onmessage = function(event) {
-          let time = new Date();
-          feedData(event.data);
+          if (event.data instanceof ArrayBuffer)
+            feedData(event.data);
+          else
+            handleStringMsg(event);
         };
       });
       ms.addEventListener('sourceended', (e) => {
@@ -33,13 +44,54 @@
         displayVideo.play();
       });
     }
+    function updateInfo() {
+      info.textContent = 'Expected width/height/fps:'+width+'*'+height+'-'+fps+' Actual network usage:'+bandwidth+'KB/s';
+    }
+    function handleStringMsg(event) {
+      try {
+        infoMsg = JSON.parse(event.data);
+        console.log(infoMsg);
+        if (infoMsg instanceof Object) {
+          width = infoMsg.w;
+          height = infoMsg.h;
+          fps = infoMsg.fps;
+        }
+      } catch (e) {
+        console.log('Error: failed to extract json data: ', e);
+      }
+    }
+
     function feedData (data) {
-      if (sourceBuffer) {
-        sourceBuffer.appendBuffer(new Uint8Array(data));
+      total += data.byteLength;
+      try {
+        if (sourceBuffer) {
+//          let time = new Date();
+//          console.log('--- received data, time:', time.getTime(), '--', time.toTimeString(), '--', data, '---', data.length);
+          if (!sourceBuffer.updating)
+            sourceBuffer.appendBuffer(new Uint8Array(data));
+          else
+            console.log('--- SourceBuffer updating, losing frame');
+        }
+      } catch (e) {
+        console.log('Error: appendBuffer error:', e);
       }
     };
+    function playcallback() {
+      let time = new Date();
+      console.log('---------- play, time:', time.getTime());
+    }
+    function registerVideoEvents() {
+      displayVideo.addEventListener('canplay', playcallback);
+    }
+    let info = document.getElementById('info');
     displayVideo = document.getElementById('displayVideo');
+    registerVideoEvents();
     setupMediaSource();
+    setInterval(function() {
+      bandwidth = (total-totalPrev)/1024;
+      totalPrev = total;
+      updateInfo();
+    }, 1000);
     </script>    
   </body>
 </html>

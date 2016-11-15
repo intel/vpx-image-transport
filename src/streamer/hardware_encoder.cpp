@@ -19,8 +19,11 @@ HardwareEncoder::~HardwareEncoder() {
   releaseVideoEncoder(encoder_.get());
 }
 
-void HardwareEncoder::fillVideoFrame(VideoFrameRawData* frame, const cv::Mat& mat,
-                                  int frame_width, int frame_height) {
+void HardwareEncoder::fillVideoFrame(VideoFrameRawData* frame,
+                                     const cv::Mat& mat,
+                                     int frame_width,
+                                     int frame_height,
+                                     int64_t time_stamp) {
   assert(frame);
 
   // working solution for yami.
@@ -30,7 +33,7 @@ void HardwareEncoder::fillVideoFrame(VideoFrameRawData* frame, const cv::Mat& ma
   frame->handle = reinterpret_cast<intptr_t>(mat.data);
   frame->size = mat.total();
   frame->memoryType = VIDEO_DATA_MEMORY_TYPE_RAW_POINTER;
-  frame->timeStamp = ++frame_count_;
+  frame->timeStamp = time_stamp;
 
   uint32_t offset = 0;
   for (int i = 0; i < 3; ++i) {
@@ -50,10 +53,16 @@ void HardwareEncoder::encode(const cv::Mat& mat, bool isBgr) {
     cv::cvtColor(mat, input, cv::COLOR_BGR2YUV_I420);
   else
     cv::cvtColor(mat, input, cv::COLOR_RGB2YUV_I420);
+  std::chrono::high_resolution_clock::time_point time =
+      std::chrono::high_resolution_clock::now();
+  auto elapsed = time - start_time_;
+  int64_t passed_time =
+      std::chrono::duration_cast<std::chrono::nanoseconds>(elapsed).count();
 
   VideoFrameRawData input_buffer;
   memset(&input_buffer, 0, sizeof(input_buffer));
-  fillVideoFrame(&input_buffer, input, mat.size().width, mat.size().height);
+  fillVideoFrame(
+      &input_buffer, input, mat.size().width, mat.size().height, passed_time);
 
   YamiStatus status = encoder_->encode(&input_buffer);
   if (status != ENCODE_SUCCESS) {
@@ -98,7 +107,7 @@ bool HardwareEncoder::initialize(int frameWidth, int frameHeight) {
   params.resolution.height = frameHeight;
   params.intraPeriod = keyframe_forced_interval_;
   params.rcMode = RATE_CONTROL_CQP;
-  params.rcParams.bitRate = 5000;
+  params.rcParams.bitRate = 1024*1024*8;
   s = encoder_->setParameters(VideoParamsTypeCommon, &params);
   if (s != YAMI_SUCCESS) {
     STREAM_LOG_ERROR("Failed to set parameters for yami encoder, status code:%d", s);
@@ -126,6 +135,7 @@ void HardwareEncoder::connect() {
     }
   }
   frame_count_ = 0;
+  start_time_ = std::chrono::high_resolution_clock::now();
 }
 
 void HardwareEncoder::disconnect() {
