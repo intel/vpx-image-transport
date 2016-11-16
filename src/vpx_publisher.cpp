@@ -114,25 +114,15 @@ void VPXPublisher::publish(const sensor_msgs::Image& message,
   }
 
   const cv::Mat bgr = cv_image_ptr->image;
-
-  cv::Mat bgr_padded;
   const int frame_width = message.width, frame_height = message.height;
-
-  if (frame_width == bgr.cols && frame_height == bgr.rows) {
-    bgr_padded = bgr;
-  } else {
-    bgr_padded = cv::Mat::zeros(frame_height, frame_width, bgr.type());
-    cv::Mat pic_roi = bgr_padded(cv::Rect(0, 0, bgr.cols, bgr.rows));
-    bgr.copyTo(pic_roi);
-  }
 
   // Convert image to i420 color space used by vpx
   cv::Mat i420;
-  cv::cvtColor(bgr_padded, i420, cv::COLOR_BGR2YUV_I420);
+  cv::cvtColor(bgr, i420, cv::COLOR_BGR2YUV_I420);
 
   vpx_image_t image;
   if (!vpx_img_wrap(&image, VPX_IMG_FMT_I420, frame_width, frame_height, 1, i420.data)) {
-    ROS_ERROR("Failed to allocate vpx image.");
+    ROS_ERROR("Failed to wrap cv::Mat into vpx image.");
     return;
   }
 
