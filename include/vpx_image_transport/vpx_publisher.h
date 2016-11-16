@@ -47,6 +47,7 @@ private:
   mutable unsigned int keyframe_forced_interval_;
   mutable webm_tools::WebMLiveMuxer* muxer_;
 
+  void initializeEncoder(int width, int height) const;
   void configCallback(Config& config, uint32_t level);
   void sendChunkIfReady(const PublishFn &publish_fn) const;
 };

@@ -58,8 +58,6 @@ void VPXPublisher::configCallback(Config& config, uint32_t level) {
     }
   }
 
-  encoder_config_->g_w = config.width;
-  encoder_config_->g_h = config.height;
   encoder_config_->g_threads = config.threads;
   encoder_config_->rc_resize_allowed = config.resize_allowed;
   encoder_config_->rc_scaled_width = config.scaled_width;
@@ -73,17 +71,31 @@ void VPXPublisher::configCallback(Config& config, uint32_t level) {
   encoder_config_->kf_min_dist = config.keyframe_min_interval;
   encoder_config_->kf_max_dist = config.keyframe_max_interval;
 
-  if (!codec_context_) {
-    codec_context_ = new vpx_codec_ctx_t();
-    ret = vpx_codec_enc_init(codec_context_, vpx_codec_vp8_cx(), encoder_config_, 0);
-    if (ret) {
-      ROS_ERROR("Failed to initialize VPX encoder. Error No.:%d", ret);
-    }
-  } else {
+  if (codec_context_) {
     ret = vpx_codec_enc_config_set(codec_context_, encoder_config_);
     if (ret) {
       ROS_ERROR("Failed to update codec configuration. Error No.:%d", ret);
     }
+  }
+}
+
+void VPXPublisher::initializeEncoder(int width, int height) const {
+  vpx_codec_err_t ret;
+  if (!encoder_config_) {
+    encoder_config_ = new vpx_codec_enc_cfg();
+    ret = vpx_codec_enc_config_default(vpx_codec_vp8_cx(), encoder_config_, 0);
+    if (ret) {
+      ROS_ERROR("Failed to get default encoder configuration. Error No.: %d", ret);
+    }
+  }
+
+  encoder_config_->g_w = width;
+  encoder_config_->g_h = height;
+
+  codec_context_ = new vpx_codec_ctx_t();
+  ret = vpx_codec_enc_init(codec_context_, vpx_codec_vp8_cx(), encoder_config_, 0);
+  if (ret) {
+    ROS_ERROR("Failed to initialize VPX encoder. Error No.:%d", ret);
   }
 
   frame_count_ = 0;
@@ -142,6 +154,14 @@ void VPXPublisher::publish(const sensor_msgs::Image& message,
   if (frame_count_ % keyframe_forced_interval_ == 0)
     flags |= VPX_EFLAG_FORCE_KF;
 
+  if (!codec_context_) {
+    initializeEncoder(frame_width, frame_height);
+  }
+  if (!muxer_->initialized()) {
+    muxer_->Init();
+    muxer_->AddVideoTrack(frame_width, frame_height);
+  }
+
   vpx_codec_iter_t iter = NULL;
   const vpx_codec_cx_pkt_t *pkt = NULL;
   const vpx_codec_err_t ret = vpx_codec_encode(codec_context_, &image,
@@ -181,12 +201,9 @@ void VPXPublisher::sendChunkIfReady(const PublishFn &publish_fn) const {
 
 void VPXPublisher::connectCallback(const ros::SingleSubscriberPublisher& pub) {
   if (muxer_) {
-    muxer_->Finalize();
     delete muxer_;
   }
   muxer_ = new webm_tools::WebMLiveMuxer();
-  muxer_->Init();
-  muxer_->AddVideoTrack(encoder_config_->g_w, encoder_config_->g_h);
 }
 
 void VPXPublisher::disconnectCallback(const ros::SingleSubscriberPublisher &pub) {
@@ -199,8 +216,6 @@ void VPXPublisher::disconnectCallback(const ros::SingleSubscriberPublisher &pub)
   if (!muxer_->ChunkReady(&chunk_length)) {
     ROS_ERROR("Failed to get chunk after finalized called.");
   }
-  delete muxer_;
-  muxer_ = 0;
 }
 
 } // vpx_image_transport
