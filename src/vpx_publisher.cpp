@@ -89,20 +89,6 @@ void VPXPublisher::configCallback(Config& config, uint32_t level) {
   frame_count_ = 0;
 }
 
-int vpx_img_plane_width(const vpx_image_t *img, int plane) {
-  if (plane > 0 && img->x_chroma_shift > 0)
-    return (img->d_w + 1) >> img->x_chroma_shift;
-  else
-    return img->d_w;
-}
-
-int vpx_img_plane_height(const vpx_image_t *img, int plane) {
-  if (plane > 0 &&  img->y_chroma_shift > 0)
-    return (img->d_h + 1) >> img->y_chroma_shift;
-  else
-    return img->d_h;
-}
-
 void VPXPublisher::publish(const sensor_msgs::Image& message,
                            const PublishFn& publish_fn) const {
   // conversion necessary
@@ -145,20 +131,9 @@ void VPXPublisher::publish(const sensor_msgs::Image& message,
   cv::cvtColor(bgr_padded, i420, cv::COLOR_BGR2YUV_I420);
 
   vpx_image_t image;
-  if (!vpx_img_alloc(&image, VPX_IMG_FMT_I420, frame_width, frame_height, 1)) {
+  if (!vpx_img_wrap(&image, VPX_IMG_FMT_I420, frame_width, frame_height, 1, i420.data)) {
     ROS_ERROR("Failed to allocate vpx image.");
     return;
-  }
-  unsigned char* org = i420.data;
-  for (int plane = 0; plane < 3; ++plane) {
-    unsigned char* buf = image.planes[plane];
-    const int w = vpx_img_plane_width(&image, plane);
-    const int h = vpx_img_plane_height(&image, plane);
-    for (int y = 0; y < h; ++y) {
-      memcpy(buf, org, w);
-      buf += w;
-      org += w;
-    }
   }
 
   int flags = 0;
@@ -170,7 +145,6 @@ void VPXPublisher::publish(const sensor_msgs::Image& message,
   const vpx_codec_err_t ret = vpx_codec_encode(codec_context_, &image,
      frame_count_++, 1, flags, VPX_DL_REALTIME);
   if (ret != VPX_CODEC_OK) {
-    vpx_img_free(&image);
     return;
   }
 
@@ -183,7 +157,6 @@ void VPXPublisher::publish(const sensor_msgs::Image& message,
     }
   }
   sendChunkIfReady(publish_fn);
-  vpx_img_free(&image);
 }
 
 void VPXPublisher::sendChunkIfReady(const PublishFn &publish_fn) const {
