@@ -92,15 +92,20 @@ void VPXPublisher::configCallback(Config& config, uint32_t level) {
 void VPXPublisher::publish(const sensor_msgs::Image& message,
                            const PublishFn& publish_fn) const {
   // conversion necessary
-  if (!sensor_msgs::image_encodings::isColor(message.encoding)
-      && !sensor_msgs::image_encodings::isMono(message.encoding)) {
+  std::string encoding;
+  if (sensor_msgs::image_encodings::isColor(message.encoding)
+      || sensor_msgs::image_encodings::isMono(message.encoding)) {
+    encoding = sensor_msgs::image_encodings::BGR8;
+  } else if (message.encoding == std::string("16UC1")) {
+    encoding = sensor_msgs::image_encodings::TYPE_16UC1;
+  } else {
     ROS_ERROR("VPX publisher is not able to handle encoding type:%s", message.encoding.c_str());
     return;
   }
 
   cv_bridge::CvImageConstPtr cv_image_ptr;
   try {
-    cv_image_ptr = cv_bridge::toCvCopy(message, sensor_msgs::image_encodings::BGR8);
+    cv_image_ptr = cv_bridge::toCvCopy(message, encoding);
   } catch (cv_bridge::Exception& e) {
     ROS_ERROR("cv_bridge exception: '%s'", e.what());
     return;
@@ -109,12 +114,19 @@ void VPXPublisher::publish(const sensor_msgs::Image& message,
     return;
   }
   if (cv_image_ptr == 0) {
-    ROS_ERROR("Unable to convert from '%s' to 'bgr8'", message.encoding.c_str());
+    ROS_ERROR("Unable to convert from '%s' to '%s'", message.encoding.c_str(), encoding.c_str());
     return;
   }
 
-  const cv::Mat bgr = cv_image_ptr->image;
   const int frame_width = message.width, frame_height = message.height;
+  cv::Mat bgr;
+  if (encoding == sensor_msgs::image_encodings::TYPE_16UC1) {
+    cv::Mat gray8;
+    cv_image_ptr->image.convertTo(gray8, CV_8UC1);
+    cv::cvtColor(gray8, bgr, cv::COLOR_GRAY2BGR);
+  } else {
+    bgr = cv_image_ptr->image;
+  }
 
   // Convert image to i420 color space used by vpx
   cv::Mat i420;
