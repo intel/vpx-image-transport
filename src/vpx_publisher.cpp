@@ -59,9 +59,6 @@ void VPXPublisher::configCallback(Config& config, uint32_t level) {
   }
 
   encoder_config_->g_threads = config.threads;
-  encoder_config_->rc_resize_allowed = config.resize_allowed;
-  encoder_config_->rc_scaled_width = config.scaled_width;
-  encoder_config_->rc_scaled_height = config.scaled_height;
   encoder_config_->rc_end_usage = static_cast<vpx_rc_mode>(config.end_usage);
   encoder_config_->rc_target_bitrate = config.target_bitrate;
 
