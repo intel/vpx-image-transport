@@ -21,7 +21,9 @@ VPXPublisher::VPXPublisher()
 
 VPXPublisher::~VPXPublisher() {
   muxer_->Finalize();
-  vpx_codec_destroy(codec_context_);
+  if (VPX_CODEC_OK != vpx_codec_destroy(codec_context_)) {
+    ROS_ERROR("Failed to destroy VPX encoder context.");
+  }
   delete muxer_;
   delete codec_context_;
   delete encoder_config_;
@@ -161,8 +163,9 @@ void VPXPublisher::publish(const sensor_msgs::Image& message,
 
   vpx_codec_iter_t iter = NULL;
   const vpx_codec_cx_pkt_t *pkt = NULL;
+
   const vpx_codec_err_t ret = vpx_codec_encode(codec_context_, &image,
-     frame_count_++, 1, flags, VPX_DL_REALTIME);
+     ros::Time::now().toNSec(), 1, flags, VPX_DL_REALTIME);
   if (ret != VPX_CODEC_OK) {
     return;
   }
@@ -170,7 +173,7 @@ void VPXPublisher::publish(const sensor_msgs::Image& message,
   while ((pkt = vpx_codec_get_cx_data(codec_context_, &iter)) != NULL) {
     if (pkt->kind == VPX_CODEC_CX_FRAME_PKT) {
       bool keyframe = (pkt->data.frame.flags & VPX_FRAME_IS_KEY) != 0;
-      muxer_->WriteVideoFrame(reinterpret_cast<uint8*>(pkt->data.frame.buf), pkt->data.frame.sz, frame_count_, keyframe);
+      muxer_->WriteVideoFrame(reinterpret_cast<uint8*>(pkt->data.frame.buf), pkt->data.frame.sz, ++frame_count_, keyframe);
     } else {
       ROS_INFO("pkt->kind: %d", pkt->kind);
     }

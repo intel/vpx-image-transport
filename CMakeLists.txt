@@ -149,6 +149,7 @@ include_directories(SYSTEM
 )
 include_directories(
   ${source_dir}/shared
+  ${source_dir}/../webm-tools-build/libwebm/src/libwebm
 )
 
 link_directories(${PC_VPX_LIBRARY_DIRS})
