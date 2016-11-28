@@ -66,7 +66,7 @@ index 90d6525..c73f978 100644
 +install(TARGETS ${PROJECT_NAME} DESTINATION lib)
 diff --git a/libwebm.patch b/libwebm.patch
 new file mode 100644
-index 0000000..49cc7fc
+index 0000000..1b2d813
 --- /dev/null
 +++ b/libwebm.patch
 @@ -0,0 +1,64 @@
@@ -147,7 +147,7 @@ index 527be6b..84e8de5 100644
  }
 
 diff --git a/shared/webm_live_muxer.cc b/shared/webm_live_muxer.cc
-index b03057f..e9b3873 100644
+index b03057f..a70fb7d 100644
 --- a/shared/webm_live_muxer.cc
 +++ b/shared/webm_live_muxer.cc
 @@ -40,7 +40,7 @@ WebMLiveMuxer::WebMLiveMuxer()
@@ -167,6 +167,16 @@ index b03057f..e9b3873 100644
 
    // Set segment info fields.
    using mkvmuxer::SegmentInfo;
+@@ -313,9 +314,6 @@ int WebMLiveMuxer::ReadChunk(int32 buffer_capacity, uint8* ptr_buf) {
+     return kUserBufferTooSmall;
+   }
+
+-  fprintf(stdout, "ReadChunk capacity=%d length=%d total buffered=%zd\n",
+-          buffer_capacity, chunk_length, buffer_.size());
+-
+   // Copy chunk to user buffer, and erase it from |buffer_|.
+   memcpy(ptr_buf, &buffer_[0], chunk_length);
+   ptr_writer_->EraseChunk();
 diff --git a/shared/webm_live_muxer.h b/shared/webm_live_muxer.h
 index b7066e2..3ee8912 100644
 --- a/shared/webm_live_muxer.h
