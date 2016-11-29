@@ -109,6 +109,8 @@ void VPXPublisher::publish(const sensor_msgs::Image& message,
     encoding = sensor_msgs::image_encodings::BGR8;
   } else if (message.encoding == std::string("16UC1")) {
     encoding = sensor_msgs::image_encodings::TYPE_16UC1;
+  } else if (message.encoding == std::string("8UC1")) {
+    encoding = sensor_msgs::image_encodings::TYPE_8UC1;
   } else {
     ROS_ERROR("VPX publisher is not able to handle encoding type:%s", message.encoding.c_str());
     return;
@@ -134,6 +136,9 @@ void VPXPublisher::publish(const sensor_msgs::Image& message,
   if (encoding == sensor_msgs::image_encodings::TYPE_16UC1) {
     cv::Mat gray8;
     cv_image_ptr->image.convertTo(gray8, CV_8UC1);
+    cv::cvtColor(gray8, bgr, cv::COLOR_GRAY2BGR);
+  } else if (encoding == sensor_msgs::image_encodings::TYPE_8UC1) {
+    cv::Mat gray8 = cv_image_ptr->image;
     cv::cvtColor(gray8, bgr, cv::COLOR_GRAY2BGR);
   } else {
     bgr = cv_image_ptr->image;
