@@ -24,6 +24,7 @@ find_package(catkin REQUIRED COMPONENTS
 # find_package(Boost REQUIRED COMPONENTS system)
 find_package(PkgConfig)
 pkg_check_modules(PC_VPX REQUIRED vpx)
+pkg_check_modules(PC_LIBVA REQUIRED libva)
 
 ExternalProject_Add(webm-tools
   PREFIX third_party/webm-tools
@@ -33,6 +34,16 @@ ExternalProject_Add(webm-tools
   BUILD_COMMAND make -j8
 )
 ExternalProject_Get_Property(webm-tools binary_dir source_dir)
+
+ExternalProject_Add(libyami
+  PREFIX third_party/libyami
+  GIT_REPOSITORY https://github.com/01org/libyami.git
+  GIT_TAG libyami-1.0.1
+  CONFIGURE_COMMAND ${source_dir}/../../../libyami/src/libyami/autogen.sh --prefix=${source_dir}/../../../libyami/src/libyami-build --enable-vp8enc --enable-vp8dec
+  BUILD_COMMAND make -j8
+  BUILD_IN_SOURCE 1
+  INSTALL_COMMAND make install
+)
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -150,6 +161,7 @@ include_directories(SYSTEM
 include_directories(
   ${source_dir}/shared
   ${source_dir}/../webm-tools-build/libwebm/src/libwebm
+  ${source_dir}/../../../libyami/src/libyami-build/include/libyami
 )
 
 link_directories(${PC_VPX_LIBRARY_DIRS})
@@ -166,7 +178,7 @@ add_library(${PROJECT_NAME} src/vpx_publisher.cpp src/vpx_subscriber.cpp src/man
 ## either from message generation or dynamic reconfigure
 # add_dependencies(vpx_image_transport ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_gencfg ${PROJECT_NAME}_gencpp)
-add_dependencies(${PROJECT_NAME} webm-tools)
+add_dependencies(${PROJECT_NAME} webm-tools libyami)
 
 ## Declare a C++ executable
 # add_executable(vpx_image_transport_node src/vpx_image_transport_node.cpp)
@@ -183,6 +195,7 @@ target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES}
                                       ${PC_VPX_LIBRARIES}
                                       ${OpenCV_LIBRARIES}
                                       ${binary_dir}/libwebm-tools.so
+                                      ${binary_dir}/../../../libyami/src/libyami-build/lib/libyami.so
 )
 
 #############

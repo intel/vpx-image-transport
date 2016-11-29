@@ -19,12 +19,12 @@ WebM is an open source software project which is dedicated to develop a high-qua
 
 * Then setup your ROS environment and create your ROS workspace. Follow the [instruction](http://wiki.ros.org/ROS/Tutorials/InstallingandConfiguringROSEnvironment) here.
 
-### Install libvpx
+### Install libvpx-dev and libva-dev
 
-Before building the project, you need to install `libvpx-dev` to make it compile:
+Before building the project, you need to install `libvpx-dev` and `libva-dev` to make it compile:
 
 ```bash
-sudo apt-get install libvpx-dev
+sudo apt-get install libvpx-dev libva-dev
 ```
 
 ### Install Image Transport for VPx Plugin
