@@ -132,7 +132,16 @@ void VPXSubscriber::processBlockEntry(const BlockEntry* entry, const Callback& u
     return;
   }
 
-  long long ret = 0;
+  for (int i = 0; i < block->GetFrameCount(); ++i) {
+    long long int position = block->GetFrame(i).pos;
+    long int length = block->GetFrame(i).len;
+    uint8_t* frame_buffer = static_cast<uint8_t*>(buffer_.data()
+                            + (position - bytes_consumed_) * sizeof(uint8_t));
+    decodeFrame(frame_buffer, length, user_cb);
+  }
+}
+
+void VPXSubscriber::decodeFrame(uint8_t* buffer, long int size, const Callback& user_cb) {
   if (!codec_context_) {
     codec_context_ = new vpx_codec_ctx_t();
     decoder_config_ = new vpx_codec_dec_cfg();
@@ -140,29 +149,18 @@ void VPXSubscriber::processBlockEntry(const BlockEntry* entry, const Callback& u
     decoder_config_->w = static_cast<unsigned int>(track_->GetWidth());
     decoder_config_->h = static_cast<unsigned int>(track_->GetHeight());
 
-    ret = vpx_codec_dec_init(codec_context_, vpx_codec_vp8_dx(), decoder_config_, 0);
+    long long ret = vpx_codec_dec_init(codec_context_, vpx_codec_vp8_dx(), decoder_config_, 0);
     if (ret) {
       ROS_ERROR("Failed to initialize VPX context. Error No.:%lld", ret);
       return;
     }
   }
 
-  for (int i = 0; i < block->GetFrameCount(); ++i) {
-    long long int position = block->GetFrame(i).pos;
-    long int length = block->GetFrame(i).len;
-    uint8_t* frame_buffer = static_cast<uint8_t*>(buffer_.data()
-                            + (position - bytes_consumed_) * sizeof(uint8_t));
-
-    const vpx_codec_err_t ret = vpx_codec_decode(codec_context_, frame_buffer, length, NULL, 0);
-    if (ret != VPX_CODEC_OK) {
-      ROS_ERROR("Failed to decode frame:%d, VPX error code:%d", i, ret);
-      return;
-    }
-    decodeImage(user_cb);
+  const vpx_codec_err_t err = vpx_codec_decode(codec_context_, buffer, size, NULL, 0);
+  if (err != VPX_CODEC_OK) {
+    ROS_ERROR("Failed to decode frame, VPX error code:%d", err);
+    return;
   }
-}
-
-void VPXSubscriber::decodeImage(const Callback& user_cb) {
   vpx_codec_iter_t iter = NULL;
   vpx_image_t* image = NULL;
   while ((image = vpx_codec_get_frame(codec_context_, &iter)) != NULL) {

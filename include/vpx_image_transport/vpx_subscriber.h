@@ -52,7 +52,7 @@ private:
 
   const mkvparser::BlockEntry* retriveBlockEntry(const mkvparser::BlockEntry* current);
   void processBlockEntry(const mkvparser::BlockEntry* entry, const Callback& user_cb);
-  void decodeImage(const Callback& user_cb);
+  void decodeFrame(uint8_t* buffer, long int size, const Callback& user_cb);
 
   friend class VPXBufferManager;
 };
