@@ -2,8 +2,8 @@
 Changelog for package vpx image transport
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.0.2 (2016-12-28)
+------------------
 * Added CHANGELOG.rst
 * Added .gitignore
 * Cleanup package.xml
