@@ -1,52 +1,38 @@
 'use strict';
 
 const rosnodejs = require('rosnodejs');
+const vpx_msgs = rosnodejs.require('vpx_image_transport');
 
-let displayVideo = document.getElementById('displayVideo');
+const VPXMsg = vpx_msgs.msg.Packet;
 
-let mimeType = 'video/webm; codecs=vp8';
-const topicConfig = {
-  topic: '/camera/color/image_raw/vpx',
-  message: 'vpx_image_transport/Packet'
-};
+rosnodejs.initNode('/realsense_display').then((rosNode) => {
+  console.log(`ros node created:${rosNode.toString()}`);
 
-let startROS = dataCallback => {
-  rosnodejs.initNode('/realsense_display',{
-    messages: [topicConfig.message]
-  }).then((rosNode) => {
-    console.log(`ros node created:${rosNode.toString()}`);
+  let displayVideo = document.getElementById('displayVideo');
 
-    let sub = rosNode.subscribe(topicConfig.topic, topicConfig.message, data => {
-      dataCallback(data.data);
-    });
-  })
-}
+  // VP8 video stream setup
+  const mimeType = 'video/webm; codecs=vp8';
+  if (!MediaSource.isTypeSupported(mimeType)) {
+    console.error(`mimetype:${mimeType} is not supported.`);
+    return;
+  }
 
-if (!MediaSource.isTypeSupported(mimeType)) {
-  console.error(`mimetype:${mimeType} is not supported.`);
-} else {
   let ms = new MediaSource();
   displayVideo.src = window.URL.createObjectURL(ms);
 
-  let currentSourceBuffer = null;
+  let sourceBuffer = null;
   ms.addEventListener('sourceopen', (e) => {
-    startROS((data) => {
-      if (!currentSourceBuffer) {
-        console.log("ROS::No source, create one.")
-        let sourceBuffer = ms.addSourceBuffer(mimeType);
-        sourceBuffer.addEventListener('updateend', (ee) => {
-          if (sourceBuffer.updating) {
-            console.log("still updating, exit updateend");
-            return;
-          }
-        }, false);
-        currentSourceBuffer = sourceBuffer;
-      }
-      currentSourceBuffer.appendBuffer(new Uint8Array(data));
-    });
+    sourceBuffer = ms.addSourceBuffer(mimeType);
   }, false);
   ms.addEventListener('sourceended', (e) => {
     ms.endOfStream();
     displayVideo.play();
   }, false);
-}
+
+  rosNode.subscribe('/camera/color/image_raw/vpx', VPXMsg, (data) => {
+    if (sourceBuffer == null) {
+      return;
+    }
+    sourceBuffer.appendBuffer(new Uint8Array(data.data));
+  });
+});
