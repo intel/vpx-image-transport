@@ -14,17 +14,14 @@ namespace vpx_image_transport {
 
 class YamiEncoder : public Encoder {
 public:
-  YamiEncoder(EncoderDelegate* delegate);
+  YamiEncoder(EncoderDelegate* delegate, NativeDisplay* display);
   virtual ~YamiEncoder();
 
-  virtual void encode(const cv::Mat& mat);
   virtual bool createEncoder(int frameWidth, int frameHeight);
+  virtual bool initialized();
+  virtual void encode(const cv::Mat& mat);
   virtual void connect();
   virtual void disconnect();
-
-  bool initDisplay();
-  bool initialized();
-  bool isHardwareAccelerationSupported();
 
 private:
   void fillVideoFrame(VideoFrameRawData* frame, const cv::Mat& mat,
@@ -33,7 +30,6 @@ private:
 private:
   YamiMediaCodec::IVideoEncoder* encoder_;
   SharedPtr<NativeDisplay> native_display_;
-  VADisplay va_display_;
   uint32_t max_output_buf_size_;
   uint32_t keyframe_forced_interval_;
   uint64_t frame_count_;

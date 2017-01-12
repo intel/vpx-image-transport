@@ -17,11 +17,10 @@ public:
   virtual ~SoftwareEncoder();
 
   virtual bool createEncoder(int frameWidth, int frameHeight);
+  virtual bool initialized();
   virtual void encode(const cv::Mat& mat);
   virtual void configure(const EncoderConfig& config);
   virtual void connect();
-
-  bool initialized();
 
 private:
   vpx_codec_ctx_t* codec_context_;

@@ -13,9 +13,8 @@ namespace vpx_image_transport {
   using namespace webm_tools;
   using namespace mkvmuxer;
 
-VPXPublisher::VPXPublisher()
-  : package_sequence_(0), muxer_(NULL), yami_encoder_(new YamiEncoder(this)),
-    software_encoder_(new SoftwareEncoder(this)) {
+VPXPublisher::VPXPublisher() : package_sequence_(0), muxer_(NULL) {
+  encoder_.reset(encoder_factory_.createEncoder(this));
 }
 
 VPXPublisher::~VPXPublisher() {
@@ -47,8 +46,7 @@ void VPXPublisher::configCallback(Config& config, uint32_t level) {
   conf.target_bitrate = config.target_bitrate;
   conf.keyframe_forced_interval = config.keyframe_forced_interval;
 
-  yami_encoder_->configure(conf);
-  software_encoder_->configure(conf);
+  encoder_->configure(conf);
 }
 
 void VPXPublisher::publish(const sensor_msgs::Image& message,
@@ -95,10 +93,10 @@ void VPXPublisher::publish(const sensor_msgs::Image& message,
     bgr = cv_image_ptr->image;
   }
 
-  if (!yami_encoder_->initialized() && !software_encoder_->initialized()) {
-    if (yami_encoder_->createEncoder(message.width, message.height)) {
+  if (!encoder_->initialized()) {
+    if (encoder_->createEncoder(message.width, message.height)) {
       ROS_INFO("Hardware accelerated encoder enabled.");
-    } else if (!software_encoder_->createEncoder(message.width, message.height)){
+    } else {
       ROS_WARN("Failed to create encoder, will retry.");
       return;
     }
@@ -109,10 +107,8 @@ void VPXPublisher::publish(const sensor_msgs::Image& message,
     muxer_->AddVideoTrack(frame_width, frame_height);
   }
 
-  if (yami_encoder_->initialized()) {
-    yami_encoder_->encode(bgr);
-  } else if (software_encoder_->initialized()) {
-    software_encoder_->encode(bgr);
+  if (encoder_->initialized()) {
+    encoder_->encode(bgr);
   }
 
   sendChunkIfReady(publish_fn);
@@ -142,8 +138,7 @@ void VPXPublisher::connectCallback(const ros::SingleSubscriberPublisher& pub) {
   }
   muxer_ = new webm_tools::WebMLiveMuxer();
 
-  yami_encoder_->connect();
-  software_encoder_->connect();
+  encoder_->connect();
 }
 
 void VPXPublisher::disconnectCallback(const ros::SingleSubscriberPublisher &pub) {
@@ -157,8 +152,7 @@ void VPXPublisher::disconnectCallback(const ros::SingleSubscriberPublisher &pub)
     ROS_ERROR("Failed to get chunk after finalized called.");
   }
 
-  yami_encoder_->disconnect();
-  software_encoder_->disconnect();
+  encoder_->disconnect();
 }
 
 void VPXPublisher::onWriteFrame(uint8_t* buffer, uint64_t size,

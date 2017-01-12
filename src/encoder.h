@@ -25,6 +25,7 @@ public:
   virtual ~Encoder() = 0;
 
   virtual bool createEncoder(int frameWidth, int frameHeight) = 0;
+  virtual bool initialized() = 0;
   virtual void encode(const cv::Mat& mat) = 0;
   virtual void configure(const EncoderConfig& config) {};
   virtual void connect() {};
