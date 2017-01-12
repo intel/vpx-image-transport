@@ -152,6 +152,7 @@ catkin_package(
 # include_directories(include)
 include_directories(
   include
+  src
   ${catkin_INCLUDE_DIRS}
 )
 include_directories(SYSTEM
@@ -171,7 +172,7 @@ add_definitions(${PC_VPX_CFLAGS_OTHER})
 # add_library(vpx_image_transport
 #   src/${PROJECT_NAME}/vpx_image_transport.cpp
 # )
-add_library(${PROJECT_NAME} src/vpx_publisher.cpp src/vpx_subscriber.cpp src/manifest.cpp)
+add_library(${PROJECT_NAME} src/vpx_publisher.cpp src/vpx_subscriber.cpp src/manifest.cpp src/yami_encoder.cpp)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries

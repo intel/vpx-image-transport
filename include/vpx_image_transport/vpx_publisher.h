@@ -7,18 +7,21 @@
 
 #include <dynamic_reconfigure/server.h>
 #include <image_transport/simple_publisher_plugin.h>
+#include <memory>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <std_msgs/Header.h>
-#include <va/va.h>
 #include <vpx_image_transport/Packet.h>
 #include <vpx_image_transport/VPXPublisherConfig.h>
 #include <vpx/vpx_encoder.h>
 #include <webm_live_muxer.h>
-#include <VideoEncoderInterface.h>
+#include "encoder.h"
 
 namespace vpx_image_transport {
 
-class VPXPublisher : public image_transport::SimplePublisherPlugin<vpx_image_transport::Packet>
+class YamiEncoder;
+
+class VPXPublisher : public image_transport::SimplePublisherPlugin<vpx_image_transport::Packet>,
+                     public EncoderDelegate
 {
 public:
   VPXPublisher();
@@ -51,21 +54,16 @@ private:
   mutable unsigned int keyframe_forced_interval_;
   mutable webm_tools::WebMLiveMuxer* muxer_;
 
-  mutable YamiMediaCodec::IVideoEncoder* yami_encoder_;
-  mutable SharedPtr<NativeDisplay> native_display_;
-  mutable VADisplay va_display_;
-  mutable uint32_t yami_max_output_buf_size_;
+  mutable boost::shared_ptr<YamiEncoder> yami_encoder_;
 
   void configCallback(Config& config, uint32_t level);
   void sendChunkIfReady(const PublishFn &publish_fn) const;
-  bool initDisplay() const;
-  bool isHardwareAccelerationSupported() const;
-  bool createYamiEncoder(int frame_width, int frame_height) const;
   bool createVPXEncoder(int frame_width, int frame_height) const;
-  void encodeWithYami(const cv::Mat& mat) const;
   void encodeWithVPX(const cv::Mat& mat) const;
-  void fillVideoFrame(VideoFrameRawData* frame, const cv::Mat& mat,
-                      int frame_width, int frame_height) const;
+
+  // EncoderDelegate implementation.
+  virtual void onWriteFrame(uint8_t* buffer, uint64_t size,
+                            uint64_t timeStamp, bool isKeyFrame);
 };
 
 } //namespace vpx_image_transport

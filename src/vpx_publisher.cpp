@@ -5,9 +5,8 @@
 #include "vpx_image_transport/vpx_publisher.h"
 
 #include <cv_bridge/cv_bridge.h>
-#include <va/va_x11.h>
 #include <vpx/vp8cx.h>
-#include <VideoEncoderHost.h>
+#include "yami_encoder.h"
 
 namespace vpx_image_transport {
 
@@ -17,17 +16,12 @@ namespace vpx_image_transport {
 VPXPublisher::VPXPublisher()
   : codec_context_(NULL), encoder_config_(NULL), frame_count_(0),
     package_sequence_(0), keyframe_forced_interval_(4), muxer_(NULL),
-    yami_encoder_(NULL), va_display_(0), yami_max_output_buf_size_(0) {
+    yami_encoder_(new YamiEncoder(this)) {
 }
 
 VPXPublisher::~VPXPublisher() {
   muxer_->Finalize();
   delete muxer_;
-
-  if (yami_encoder_) {
-    releaseVideoEncoder(yami_encoder_);
-    delete yami_encoder_;
-  }
 
   if (codec_context_) {
     if (VPX_CODEC_OK != vpx_codec_destroy(codec_context_)) {
@@ -131,8 +125,8 @@ void VPXPublisher::publish(const sensor_msgs::Image& message,
     bgr = cv_image_ptr->image;
   }
 
-  if (!yami_encoder_ && !codec_context_) {
-    if (createYamiEncoder(message.width, message.height)) {
+  if (!yami_encoder_->initialized() && !codec_context_) {
+    if (yami_encoder_->createEncoder(message.width, message.height)) {
       ROS_INFO("Hardware accelerated encoder enabled.");
     } else if (!createVPXEncoder(message.width, message.height)){
       ROS_WARN("Failed to create encoder, will retry.");
@@ -145,56 +139,13 @@ void VPXPublisher::publish(const sensor_msgs::Image& message,
     muxer_->AddVideoTrack(frame_width, frame_height);
   }
 
-  if (yami_encoder_) {
-    encodeWithYami(bgr);
+  if (yami_encoder_->initialized()) {
+    yami_encoder_->encode(bgr);
   } else if (codec_context_) {
     encodeWithVPX(bgr);
   }
 
   sendChunkIfReady(publish_fn);
-}
-
-bool VPXPublisher::createYamiEncoder(int frame_width, int frame_height) const {
-  assert(!yami_encoder_);
-
-  if (!isHardwareAccelerationSupported()) {
-    ROS_WARN("Hardware accelerated encoding is not supported on your platform.");
-    return false;
-  }
-
-  YamiMediaCodec::IVideoEncoder* encoder = createVideoEncoder(YAMI_MIME_VP8);
-  if (!encoder) {
-    ROS_ERROR("Failed to create VP8 yami encoder.");
-    return false;
-  }
-
-  encoder->setNativeDisplay(native_display_.get());
-  VideoParamsCommon params;
-  params.size = sizeof(VideoParamsCommon);
-  YamiStatus s = encoder->getParameters(VideoParamsTypeCommon, &params);
-  if (s != YAMI_SUCCESS) {
-    ROS_ERROR("Failed to get parameters before set.");
-    return false;
-  }
-  params.resolution.width = frame_width;
-  params.resolution.height = frame_height;
-  params.intraPeriod = keyframe_forced_interval_;
-  params.rcMode = RATE_CONTROL_CQP;
-  params.rcParams.bitRate = 5000;
-  s = encoder->setParameters(VideoParamsTypeCommon, &params);
-  if (s != YAMI_SUCCESS) {
-    ROS_ERROR("Failed to set parameters for yami encoder, status code:%d", s);
-    return false;
-  }
-
-  s = encoder->start();
-  if (s != YAMI_SUCCESS) {
-    ROS_ERROR("Failed to start yami encoder, status code:%d", s);
-    return false;
-  }
-  encoder->getMaxOutSize(&yami_max_output_buf_size_);
-  yami_encoder_ = encoder;
-  return true;
 }
 
 bool VPXPublisher::createVPXEncoder(int frame_width, int frame_height) const {
@@ -220,60 +171,6 @@ bool VPXPublisher::createVPXEncoder(int frame_width, int frame_height) const {
     return false;
   }
   return true;
-}
-
-void VPXPublisher::fillVideoFrame(VideoFrameRawData* frame, const cv::Mat& mat,
-                                  int frame_width, int frame_height) const {
-  assert(frame);
-
-  // working solution for yami.
-  frame->fourcc = VA_FOURCC('I', '4', '2', '0');
-  frame->width = frame_width;
-  frame->height = frame_height;
-  frame->handle = reinterpret_cast<intptr_t>(mat.data);
-  frame->size = mat.total();
-  frame->memoryType = VIDEO_DATA_MEMORY_TYPE_RAW_POINTER;
-  frame->timeStamp = ++frame_count_;
-
-  uint32_t offset = 0;
-  for (int i = 0; i < 3; ++i) {
-    int w = i ? (frame_width + 1) >> 1 : frame_width;
-    int h = i ? (frame_height + 1) >> 1 : frame_height;
-    frame->pitch[i] = w;
-    frame->offset[i] = offset;
-    offset += w * h;
-  }
-}
-
-void VPXPublisher::encodeWithYami(const cv::Mat& mat) const {
-  assert(yami_encoder_);
-
-  cv::Mat input;
-  cv::cvtColor(mat, input, cv::COLOR_BGR2YUV_I420);
-
-  VideoFrameRawData input_buffer;
-  memset(&input_buffer, 0, sizeof(input_buffer));
-  fillVideoFrame(&input_buffer, input, mat.size().width, mat.size().height);
-
-  YamiStatus status = yami_encoder_->encode(&input_buffer);
-  if (status != ENCODE_SUCCESS) {
-    ROS_WARN("Failed to encode input buffer.");
-    return;
-  }
-
-  VideoEncOutputBuffer output_buffer;
-  output_buffer.data = static_cast<uint8_t*>(malloc(yami_max_output_buf_size_));
-  output_buffer.bufferSize = yami_max_output_buf_size_;
-  output_buffer.format = OUTPUT_EVERYTHING;
-
-  do {
-    status = yami_encoder_->getOutput(&output_buffer);
-    if (status == ENCODE_SUCCESS) {
-      bool keyframe = (4 & output_buffer.flag) != 0;
-      muxer_->WriteVideoFrame(output_buffer.data, output_buffer.dataSize, output_buffer.timeStamp, keyframe);
-    }
-  } while (status != ENCODE_BUFFER_NO_MORE);
-  free(output_buffer.data);
 }
 
 void VPXPublisher::encodeWithVPX(const cv::Mat& mat) const {
@@ -339,13 +236,7 @@ void VPXPublisher::connectCallback(const ros::SingleSubscriberPublisher& pub) {
   muxer_ = new webm_tools::WebMLiveMuxer();
   frame_count_ = 0;
 
-  if (yami_encoder_) {
-    YamiStatus s = yami_encoder_->start();
-    if (s != YAMI_SUCCESS) {
-      ROS_ERROR("Failed to start yami encoder when connect, status code:%d", s);
-      return;
-    }
-  }
+  yami_encoder_->connect();
 }
 
 void VPXPublisher::disconnectCallback(const ros::SingleSubscriberPublisher &pub) {
@@ -359,64 +250,12 @@ void VPXPublisher::disconnectCallback(const ros::SingleSubscriberPublisher &pub)
     ROS_ERROR("Failed to get chunk after finalized called.");
   }
 
-  if (yami_encoder_) {
-    yami_encoder_->flush();
-    YamiStatus s = yami_encoder_->stop();
-    if (s != YAMI_SUCCESS) {
-      ROS_ERROR("Failed to start yami encoder when disconnect, status code:%d", s);
-      return;
-    }
-  }
+  yami_encoder_->disconnect();
 }
 
-bool VPXPublisher::initDisplay() const {
-  Display* display = XOpenDisplay(NULL);
-  if (!display) {
-    ROS_ERROR("Failed to open X display.");
-    return false;
-  }
-  va_display_ = vaGetDisplay(display);
-  int major, minor;
-  VAStatus status = vaInitialize(va_display_, &major, &minor);
-  if (status != VA_STATUS_SUCCESS) {
-    ROS_ERROR("Failed to init va, with status code:%d", status);
-    return false;
-  }
-  native_display_.reset(new NativeDisplay);
-  native_display_->type = NATIVE_DISPLAY_VA;
-  native_display_->handle = (intptr_t)va_display_;
-
-  return true;
-}
-
-bool VPXPublisher::isHardwareAccelerationSupported() const {
-  if (!va_display_ && !initDisplay()) {
-    return false;
-  }
-
-  VAEntrypoint* entry_points = new VAEntrypoint[vaMaxNumEntrypoints(va_display_)];
-  int num_of_entry_points = 0;
-  VAStatus s = vaQueryConfigEntrypoints(va_display_, VAProfileVP8Version0_3, entry_points, &num_of_entry_points);
-  if (s != VA_STATUS_SUCCESS) {
-    ROS_ERROR("Failed to query VA config entry points.");
-    return false;
-  }
-  bool vp8_encoder_supported = false;
-  for (int i = 0; i < num_of_entry_points; ++i) {
-    if (entry_points[i] == VAEntrypointEncSlice) {
-      vp8_encoder_supported = true;
-      break;
-    }
-  }
-  delete [] entry_points;
-  if (!vp8_encoder_supported) {
-    return false;
-  }
-
-  std::vector<std::string> codecs = getVideoEncoderMimeTypes();
-  std::vector<std::string>::iterator finder =
-    std::find(codecs.begin(), codecs.end(), YAMI_MIME_VP8);
-  return finder != codecs.end() ? true : false;
+void VPXPublisher::onWriteFrame(uint8_t* buffer, uint64_t size,
+                                uint64_t timeStamp, bool isKeyFrame) {
+  muxer_->WriteVideoFrame(buffer, size, timeStamp, isKeyFrame);
 }
 
 } // vpx_image_transport
