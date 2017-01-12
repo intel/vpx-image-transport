@@ -12,10 +12,10 @@
 
 namespace vpx_image_transport {
 
-class YamiEncoder : public Encoder {
+class HardwareEncoder : public Encoder {
 public:
-  YamiEncoder(EncoderDelegate* delegate, NativeDisplay* display);
-  virtual ~YamiEncoder();
+  HardwareEncoder(EncoderDelegate* delegate, NativeDisplay* display);
+  virtual ~HardwareEncoder();
 
   virtual bool createEncoder(int frameWidth, int frameHeight);
   virtual bool initialized();

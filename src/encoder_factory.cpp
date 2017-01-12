@@ -7,8 +7,8 @@
 #include <ros/ros.h>
 #include <va/va_x11.h>
 #include <VideoEncoderHost.h>
+#include "hardware_encoder.h"
 #include "software_encoder.h"
-#include "yami_encoder.h"
 
 namespace vpx_image_transport {
 
@@ -24,7 +24,7 @@ Encoder* EncoderFactory::createEncoder(EncoderDelegate* delegate, CreationMethod
     NativeDisplay* display = new NativeDisplay;
     display->type = NATIVE_DISPLAY_VA;
     display->handle = (intptr_t)va_display_;
-    encoder = new YamiEncoder(delegate, display);
+    encoder = new HardwareEncoder(delegate, display);
   } else {
     encoder = new SoftwareEncoder(delegate);
   }

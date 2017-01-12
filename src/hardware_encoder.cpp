@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "yami_encoder.h"
+#include "hardware_encoder.h"
 
 #include <ros/ros.h>
 #include <va/va_x11.h>
@@ -10,19 +10,19 @@
 
 namespace vpx_image_transport {
 
-YamiEncoder::YamiEncoder(EncoderDelegate* delegate, NativeDisplay* display)
+HardwareEncoder::HardwareEncoder(EncoderDelegate* delegate, NativeDisplay* display)
   : Encoder(delegate), encoder_(NULL), native_display_(display), max_output_buf_size_(0),
     keyframe_forced_interval_(4), frame_count_(0) {
 }
 
-YamiEncoder::~YamiEncoder() {
+HardwareEncoder::~HardwareEncoder() {
   if (encoder_) {
     releaseVideoEncoder(encoder_);
     delete encoder_;
   }
 }
 
-void YamiEncoder::fillVideoFrame(VideoFrameRawData* frame, const cv::Mat& mat,
+void HardwareEncoder::fillVideoFrame(VideoFrameRawData* frame, const cv::Mat& mat,
                                   int frame_width, int frame_height) {
   assert(frame);
 
@@ -45,7 +45,7 @@ void YamiEncoder::fillVideoFrame(VideoFrameRawData* frame, const cv::Mat& mat,
   }
 }
 
-void YamiEncoder::encode(const cv::Mat& mat) {
+void HardwareEncoder::encode(const cv::Mat& mat) {
   assert(encoder_);
 
   cv::Mat input;
@@ -77,7 +77,7 @@ void YamiEncoder::encode(const cv::Mat& mat) {
   free(output_buffer.data);
 }
 
-bool YamiEncoder::createEncoder(int frameWidth, int frameHeight) {
+bool HardwareEncoder::createEncoder(int frameWidth, int frameHeight) {
   assert(!encoder_);
 
   YamiMediaCodec::IVideoEncoder* encoder = createVideoEncoder(YAMI_MIME_VP8);
@@ -115,10 +115,10 @@ bool YamiEncoder::createEncoder(int frameWidth, int frameHeight) {
   return true;
 }
 
-bool YamiEncoder::initialized() {
+bool HardwareEncoder::initialized() {
   return encoder_ != NULL;
 }
-void YamiEncoder::connect() {
+void HardwareEncoder::connect() {
   if (encoder_) {
     YamiStatus s = encoder_->start();
     if (s != YAMI_SUCCESS) {
@@ -129,7 +129,7 @@ void YamiEncoder::connect() {
   frame_count_ = 0;
 }
 
-void YamiEncoder::disconnect() {
+void HardwareEncoder::disconnect() {
   if (encoder_) {
     encoder_->flush();
     YamiStatus s = encoder_->stop();

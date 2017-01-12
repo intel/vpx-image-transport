@@ -5,8 +5,6 @@
 #include "vpx_image_transport/vpx_publisher.h"
 
 #include <cv_bridge/cv_bridge.h>
-#include "yami_encoder.h"
-#include "software_encoder.h"
 
 namespace vpx_image_transport {
 
