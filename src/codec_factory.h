@@ -2,23 +2,25 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef ENCODER_FACTORY_H
-#define ENCODER_FACTORY_H
+#ifndef CODEC_FACTORY_H
+#define CODEC_FACTORY_H
 
 #include <va/va.h>
+#include "decoder.h"
 #include "encoder.h"
 
 namespace vpx_image_transport {
 
-class EncoderFactory {
+class CodecFactory {
 public:
   enum CreationMethod {
     DEFAULT = 0,
     SOFTWARE_ONLY
   };
-  EncoderFactory();
-  ~EncoderFactory();
+  CodecFactory();
+  ~CodecFactory();
   Encoder* createEncoder(EncoderDelegate* delegate, CreationMethod method=DEFAULT);
+  Decoder* createDecoder(DecoderDelegate* delegate, CreationMethod method=DEFAULT);
 
 private:
   bool initDisplay();
@@ -29,4 +31,4 @@ private:
 
 } // namespace vpx_image_transport
 
-#endif // ENCODER_FACTORY_H
+#endif // CODEC_FACTORY_H

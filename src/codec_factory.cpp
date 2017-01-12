@@ -2,23 +2,25 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "encoder_factory.h"
+#include "codec_factory.h"
 
 #include <ros/ros.h>
 #include <va/va_x11.h>
 #include <VideoEncoderHost.h>
+#include "hardware_decoder.h"
 #include "hardware_encoder.h"
+#include "software_decoder.h"
 #include "software_encoder.h"
 
 namespace vpx_image_transport {
 
-EncoderFactory::EncoderFactory() : va_display_(NULL) {
+CodecFactory::CodecFactory() : va_display_(NULL) {
 }
 
-EncoderFactory::~EncoderFactory() {
+CodecFactory::~CodecFactory() {
 }
 
-Encoder* EncoderFactory::createEncoder(EncoderDelegate* delegate, CreationMethod method) {
+Encoder* CodecFactory::createEncoder(EncoderDelegate* delegate, CreationMethod method) {
   Encoder* encoder = NULL;
   if (method != SOFTWARE_ONLY && isHardwareAccelerationSupported()) {
     NativeDisplay* display = new NativeDisplay;
@@ -31,7 +33,20 @@ Encoder* EncoderFactory::createEncoder(EncoderDelegate* delegate, CreationMethod
   return encoder;
 }
 
-bool EncoderFactory::initDisplay() {
+Decoder* CodecFactory::createDecoder(DecoderDelegate* delegate, CreationMethod method) {
+  Decoder* decoder = NULL;
+  if (method != SOFTWARE_ONLY && isHardwareAccelerationSupported()) {
+    NativeDisplay* display = new NativeDisplay;
+    display->type = NATIVE_DISPLAY_VA;
+    display->handle = (intptr_t)va_display_;
+    decoder = new HardwareDecoder(delegate, display);
+  } else {
+    decoder = new SoftwareDecoder(delegate);
+  }
+  return decoder;
+}
+
+bool CodecFactory::initDisplay() {
   Display* display = XOpenDisplay(NULL);
   if (!display) {
     ROS_ERROR("Failed to open X display.");
@@ -47,7 +62,7 @@ bool EncoderFactory::initDisplay() {
   return true;
 }
 
-bool EncoderFactory::isHardwareAccelerationSupported() {
+bool CodecFactory::isHardwareAccelerationSupported() {
   if (!va_display_ && !initDisplay()) {
     return false;
   }

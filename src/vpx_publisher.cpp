@@ -12,7 +12,7 @@ namespace vpx_image_transport {
   using namespace mkvmuxer;
 
 VPXPublisher::VPXPublisher() : package_sequence_(0), muxer_(NULL) {
-  encoder_.reset(encoder_factory_.createEncoder(this));
+  encoder_.reset(codec_factory_.createEncoder(this));
 }
 
 VPXPublisher::~VPXPublisher() {

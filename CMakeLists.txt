@@ -172,7 +172,16 @@ add_definitions(${PC_VPX_CFLAGS_OTHER})
 # add_library(vpx_image_transport
 #   src/${PROJECT_NAME}/vpx_image_transport.cpp
 # )
-add_library(${PROJECT_NAME} src/vpx_publisher.cpp src/vpx_subscriber.cpp src/manifest.cpp src/hardware_encoder.cpp src/software_encoder.cpp src/encoder_factory.cpp)
+add_library(${PROJECT_NAME}
+  src/vpx_publisher.cpp
+  src/vpx_subscriber.cpp
+  src/manifest.cpp
+  src/codec_factory.cpp
+  src/hardware_encoder.cpp
+  src/hardware_decoder.cpp
+  src/software_encoder.cpp
+  src/software_decoder.cpp
+)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries

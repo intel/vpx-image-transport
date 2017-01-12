@@ -11,8 +11,8 @@
 #include <vpx_image_transport/Packet.h>
 #include <vpx_image_transport/VPXPublisherConfig.h>
 #include <webm_live_muxer.h>
+#include "codec_factory.h"
 #include "encoder.h"
-#include "encoder_factory.h"
 
 namespace vpx_image_transport {
 
@@ -50,7 +50,7 @@ private:
   mutable uint64_t package_sequence_;
   mutable webm_tools::WebMLiveMuxer* muxer_;
 
-  mutable EncoderFactory encoder_factory_;
+  mutable CodecFactory codec_factory_;
   mutable boost::shared_ptr<Encoder> encoder_;
 
   void configCallback(Config& config, uint32_t level);
