@@ -7,11 +7,10 @@
 
 #include <image_transport/simple_subscriber_plugin.h>
 #include <mkvparser/mkvparser.h>
-#include <va/va.h>
 #include <vpx_image_transport/Packet.h>
-#include <vpx/vpx_decoder.h>
 #include <webm_file.h>
-#include <VideoDecoderInterface.h>
+#include "codec_factory.h"
+#include "decoder.h"
 
 namespace vpx_image_transport {
 
@@ -27,8 +26,9 @@ private:
   int bytes_read_;
 };
 
-class VPXSubscriber : public
-  image_transport::SimpleSubscriberPlugin<vpx_image_transport::Packet> {
+class VPXSubscriber
+  : public image_transport::SimpleSubscriberPlugin<vpx_image_transport::Packet>,
+    public DecoderDelegate {
 public:
   VPXSubscriber();
   virtual ~VPXSubscriber();
@@ -47,24 +47,18 @@ private:
   const mkvparser::VideoTrack* track_;
   const mkvparser::BlockEntry* current_block_;
 
-  vpx_codec_ctx_t* codec_context_;
-  vpx_codec_dec_cfg_t* decoder_config_;
-
-  YamiMediaCodec::IVideoDecoder* yami_decoder_;
-  SharedPtr<NativeDisplay> native_display_;
-  VADisplay va_display_;
+  CodecFactory codec_factory_;
+  boost::shared_ptr<Decoder> decoder_;
 
   unsigned long image_index_;
+  const Callback* user_callback_;
 
   const mkvparser::BlockEntry* retriveBlockEntry(const mkvparser::BlockEntry* current);
   void processBlockEntry(const mkvparser::BlockEntry* entry, const Callback& user_cb);
   void decodeFrame(uint8_t* buffer, long int size, const Callback& user_cb);
-  bool initDisplay();
-  bool createYamiDecoder();
-  bool createVPXDecoder();
-  bool isHardwareAccelerationSupported();
-  void decodeFrameWithYami(uint8_t* buffer, long int size, const Callback& user_cb);
-  void decodeFrameWithVPX(uint8_t* buffer, long int size, const Callback& user_cb);
+
+  // DecoderDelegate Implementation.
+  virtual void onFrameDecoded(const cv::Mat& bgr);
 
   friend class VPXBufferManager;
 };

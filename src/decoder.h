@@ -5,16 +5,26 @@
 #ifndef DECODER_H
 #define DECODER_H
 
+#include <opencv2/imgproc/imgproc.hpp>
+
 namespace vpx_image_transport {
 
 class DecoderDelegate {
 public:
-  //virtual void
+  virtual void onFrameDecoded(const cv::Mat& bgr) = 0;
+};
+
+struct DecoderConfig {
 };
 
 class Decoder {
 public:
   virtual ~Decoder() = 0;
+
+  virtual bool createDecoder(int frameWidth, int frameHeight) = 0;
+  virtual bool initialized() = 0;
+  virtual void decode(uint8_t* buffer, uint64_t size) = 0;
+  virtual void configure(const DecoderConfig& config) {};
 
 protected:
   Decoder(DecoderDelegate* delegate) : delegate_(delegate) {};

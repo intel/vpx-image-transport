@@ -13,7 +13,17 @@ namespace vpx_image_transport {
 
 class HardwareDecoder : public Decoder {
 public:
-  HardwareDecoder(DecoderDelegate* delegate, NativeDisplay* display);
+  HardwareDecoder(DecoderDelegate* delegate, VADisplay vaDisplay, NativeDisplay* nativeDisplay);
+  virtual ~HardwareDecoder();
+
+  virtual bool createDecoder(int frameWidth, int frameHeight);
+  virtual void decode(uint8_t* buffer, uint64_t size);
+  virtual bool initialized();
+
+private:
+  YamiMediaCodec::IVideoDecoder* yami_decoder_;
+  VADisplay va_display_;
+  SharedPtr<NativeDisplay> native_display_;
 };
 
 } // namespace vpx_image_transport

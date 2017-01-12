@@ -24,7 +24,8 @@ public:
 
 private:
   bool initDisplay();
-  bool isHardwareAccelerationSupported();
+  bool isHardwareAcceleratedEncoderSupported();
+  bool isHardwareAcceleratedDecoderSupported();
 
   VADisplay va_display_;
 };
