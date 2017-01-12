@@ -7,18 +7,16 @@
 
 #include <dynamic_reconfigure/server.h>
 #include <image_transport/simple_publisher_plugin.h>
-#include <memory>
-#include <opencv2/imgproc/imgproc.hpp>
 #include <std_msgs/Header.h>
 #include <vpx_image_transport/Packet.h>
 #include <vpx_image_transport/VPXPublisherConfig.h>
-#include <vpx/vpx_encoder.h>
 #include <webm_live_muxer.h>
 #include "encoder.h"
 
 namespace vpx_image_transport {
 
 class YamiEncoder;
+class SoftwareEncoder;
 
 class VPXPublisher : public image_transport::SimplePublisherPlugin<vpx_image_transport::Packet>,
                      public EncoderDelegate
@@ -47,19 +45,15 @@ private:
   typedef vpx_image_transport::VPXPublisherConfig Config;
   typedef dynamic_reconfigure::Server<Config> ReconfigureServer;
   boost::shared_ptr<ReconfigureServer> reconfigure_server_;
-  mutable vpx_codec_ctx_t* codec_context_;
-  mutable vpx_codec_enc_cfg_t* encoder_config_;
-  mutable uint64_t frame_count_;
+
   mutable uint64_t package_sequence_;
-  mutable unsigned int keyframe_forced_interval_;
   mutable webm_tools::WebMLiveMuxer* muxer_;
 
   mutable boost::shared_ptr<YamiEncoder> yami_encoder_;
+  mutable boost::shared_ptr<SoftwareEncoder> software_encoder_;
 
   void configCallback(Config& config, uint32_t level);
   void sendChunkIfReady(const PublishFn &publish_fn) const;
-  bool createVPXEncoder(int frame_width, int frame_height) const;
-  void encodeWithVPX(const cv::Mat& mat) const;
 
   // EncoderDelegate implementation.
   virtual void onWriteFrame(uint8_t* buffer, uint64_t size,

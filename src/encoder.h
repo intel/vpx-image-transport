@@ -15,12 +15,18 @@ public:
                             uint64_t timeStamp, bool isKeyFrame) = 0;
 };
 
+struct EncoderConfig {
+  int target_bitrate;
+  int keyframe_forced_interval;
+};
+
 class Encoder {
 public:
   virtual ~Encoder() = 0;
 
-  virtual void encode(const cv::Mat& mat) = 0;
   virtual bool createEncoder(int frameWidth, int frameHeight) = 0;
+  virtual void encode(const cv::Mat& mat) = 0;
+  virtual void configure(const EncoderConfig& config) {};
   virtual void connect() {};
   virtual void disconnect() {};
 
