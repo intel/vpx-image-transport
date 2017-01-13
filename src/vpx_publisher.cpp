@@ -5,19 +5,15 @@
 #include "vpx_image_transport/vpx_publisher.h"
 
 #include <cv_bridge/cv_bridge.h>
+#include <utility>
 
 namespace vpx_image_transport {
 
-  using namespace webm_tools;
-  using namespace mkvmuxer;
-
-VPXPublisher::VPXPublisher() : package_sequence_(0), muxer_(NULL) {
-  encoder_.reset(codec_factory_.createEncoder(this));
+VPXPublisher::VPXPublisher()
+  : package_sequence_(0), stream_muxer_(this), publish_function_(NULL) {
 }
 
 VPXPublisher::~VPXPublisher() {
-  muxer_->Finalize();
-  delete muxer_;
 }
 
 void VPXPublisher::advertiseImpl(ros::NodeHandle &nh,
@@ -44,7 +40,7 @@ void VPXPublisher::configCallback(Config& config, uint32_t level) {
   conf.target_bitrate = config.target_bitrate;
   conf.keyframe_forced_interval = config.keyframe_forced_interval;
 
-  encoder_->configure(conf);
+  stream_muxer_.configure(conf);
 }
 
 void VPXPublisher::publish(const sensor_msgs::Image& message,
@@ -91,71 +87,29 @@ void VPXPublisher::publish(const sensor_msgs::Image& message,
     bgr = cv_image_ptr->image;
   }
 
-  if (!encoder_->initialized()) {
-    if (encoder_->createEncoder(message.width, message.height)) {
-      ROS_INFO("Hardware accelerated encoder enabled.");
-    } else {
-      ROS_WARN("Failed to create encoder, will retry.");
-      return;
-    }
-  }
-
-  if (!muxer_->initialized()) {
-    muxer_->Init();
-    muxer_->AddVideoTrack(frame_width, frame_height);
-  }
-
-  if (encoder_->initialized()) {
-    encoder_->encode(bgr);
-  }
-
-  sendChunkIfReady(publish_fn);
+  publish_function_ = &publish_fn;
+  stream_muxer_.encodeImage(bgr, frame_width, frame_height);
+  publish_function_ = NULL;
 }
 
-void VPXPublisher::sendChunkIfReady(const PublishFn &publish_fn) const {
-  webm_tools::int32 chunk_length = 0;
-  if (!muxer_->ChunkReady(&chunk_length)) {
+void VPXPublisher::onChunkReady(std::vector<uint8_t>& buffer) {
+  if (!publish_function_) {
     return;
   }
 
   vpx_image_transport::Packet packet;
-  packet.data.resize(chunk_length);
-  int ret = muxer_->ReadChunk(chunk_length, &packet.data[0]);
-  if (WebMLiveMuxer::kSuccess != ret) {
-    ROS_ERROR("Failed to read chunk with error code: %d", ret);
-    return;
-  }
+  packet.data = boost::move(buffer);
   packet.header.seq = ++package_sequence_;
   packet.header.stamp = ros::Time::now();
-  publish_fn(packet);
+  (*publish_function_)(packet);
 }
 
 void VPXPublisher::connectCallback(const ros::SingleSubscriberPublisher& pub) {
-  if (muxer_) {
-    delete muxer_;
-  }
-  muxer_ = new webm_tools::WebMLiveMuxer();
-
-  encoder_->connect();
+  stream_muxer_.connect();
 }
 
 void VPXPublisher::disconnectCallback(const ros::SingleSubscriberPublisher &pub) {
-  int ret = muxer_->Finalize();
-  if (ret != WebMLiveMuxer::kSuccess) {
-    ROS_ERROR("Failed to finalize live muxer with error code: %d", ret);
-    return;
-  }
-  int chunk_length = 0;
-  if (!muxer_->ChunkReady(&chunk_length)) {
-    ROS_ERROR("Failed to get chunk after finalized called.");
-  }
-
-  encoder_->disconnect();
-}
-
-void VPXPublisher::onWriteFrame(uint8_t* buffer, uint64_t size,
-                                uint64_t timeStamp, bool isKeyFrame) {
-  muxer_->WriteVideoFrame(buffer, size, timeStamp, isKeyFrame);
+  stream_muxer_.disconnect();
 }
 
 } // vpx_image_transport

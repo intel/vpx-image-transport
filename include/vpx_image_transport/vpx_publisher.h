@@ -8,19 +8,15 @@
 #include <dynamic_reconfigure/server.h>
 #include <image_transport/simple_publisher_plugin.h>
 #include <std_msgs/Header.h>
+#include <vector>
 #include <vpx_image_transport/Packet.h>
 #include <vpx_image_transport/VPXPublisherConfig.h>
-#include <webm_live_muxer.h>
-#include "codec_factory.h"
-#include "encoder.h"
+#include "stream_muxer.h"
 
 namespace vpx_image_transport {
 
-class YamiEncoder;
-class SoftwareEncoder;
-
 class VPXPublisher : public image_transport::SimplePublisherPlugin<vpx_image_transport::Packet>,
-                     public EncoderDelegate
+                     public StreamMuxerDelegate
 {
 public:
   VPXPublisher();
@@ -41,6 +37,9 @@ protected:
   virtual void connectCallback(const ros::SingleSubscriberPublisher& pub);
   virtual void disconnectCallback(const ros::SingleSubscriberPublisher &pub);
 
+  // StreamMuxerDelegate implementation
+  virtual void onChunkReady(std::vector<uint8_t>& buffer);
+
 private:
   // Dynamic reconfigure support
   typedef vpx_image_transport::VPXPublisherConfig Config;
@@ -48,17 +47,9 @@ private:
   boost::shared_ptr<ReconfigureServer> reconfigure_server_;
 
   mutable uint64_t package_sequence_;
-  mutable webm_tools::WebMLiveMuxer* muxer_;
-
-  mutable CodecFactory codec_factory_;
-  mutable boost::shared_ptr<Encoder> encoder_;
-
+  mutable StreamMuxer stream_muxer_;
+  mutable const PublishFn* publish_function_;
   void configCallback(Config& config, uint32_t level);
-  void sendChunkIfReady(const PublishFn &publish_fn) const;
-
-  // EncoderDelegate implementation.
-  virtual void onWriteFrame(uint8_t* buffer, uint64_t size,
-                            uint64_t timeStamp, bool isKeyFrame);
 };
 
 } //namespace vpx_image_transport
