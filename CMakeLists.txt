@@ -182,6 +182,7 @@ add_library(${PROJECT_NAME}
   src/software_encoder.cpp
   src/software_decoder.cpp
   src/stream_muxer.cpp
+  src/stream_parser.cpp
 )
 
 ## Add cmake target dependencies of the library
