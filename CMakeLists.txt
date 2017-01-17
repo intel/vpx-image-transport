@@ -153,6 +153,7 @@ catkin_package(
 include_directories(
   include
   src
+  src/streamer
   ${catkin_INCLUDE_DIRS}
 )
 include_directories(SYSTEM
@@ -176,13 +177,13 @@ add_library(${PROJECT_NAME}
   src/vpx_publisher.cpp
   src/vpx_subscriber.cpp
   src/manifest.cpp
-  src/codec_factory.cpp
-  src/hardware_encoder.cpp
-  src/hardware_decoder.cpp
-  src/software_encoder.cpp
-  src/software_decoder.cpp
-  src/stream_muxer.cpp
-  src/stream_parser.cpp
+  src/streamer/codec_factory.cpp
+  src/streamer/hardware_encoder.cpp
+  src/streamer/hardware_decoder.cpp
+  src/streamer/software_encoder.cpp
+  src/streamer/software_decoder.cpp
+  src/streamer/stream_muxer.cpp
+  src/streamer/stream_parser.cpp
 )
 
 ## Add cmake target dependencies of the library
