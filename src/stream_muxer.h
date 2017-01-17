@@ -10,7 +10,7 @@
 #include "codec_factory.h"
 #include "encoder.h"
 
-namespace vpx_image_transport {
+namespace vpx_streamer {
 
 class StreamMuxerDelegate {
 public:
@@ -38,6 +38,6 @@ private:
   boost::shared_ptr<Encoder> encoder_;
 };
 
-} // namespace vpx_image_transport
+} // namespace vpx_streamer
 
 #endif // STREAM_MUXER_H

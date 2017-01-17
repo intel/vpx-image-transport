@@ -8,7 +8,7 @@
 #include <ros/ros.h>
 #include <vpx/vp8dx.h>
 
-namespace vpx_image_transport {
+namespace vpx_streamer {
 
 SoftwareDecoder::SoftwareDecoder(DecoderDelegate* delegate)
   : Decoder(delegate), codec_context_(NULL), decoder_config_(NULL)  {
@@ -22,7 +22,7 @@ SoftwareDecoder::~SoftwareDecoder() {
   delete decoder_config_;
 }
 
-bool SoftwareDecoder::createDecoder(int frameWidth, int frameHeight) {
+bool SoftwareDecoder::initialize(int frameWidth, int frameHeight) {
   codec_context_ = new vpx_codec_ctx_t();
   decoder_config_ = new vpx_codec_dec_cfg();
   decoder_config_->threads = 1;
@@ -78,4 +78,4 @@ bool SoftwareDecoder::initialized() {
   return codec_context_ != NULL;
 }
 
-} // namespace vpx_image_transport
+} // namespace vpx_streamer

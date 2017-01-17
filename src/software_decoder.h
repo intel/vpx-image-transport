@@ -8,14 +8,14 @@
 #include <vpx/vpx_decoder.h>
 #include "decoder.h"
 
-namespace vpx_image_transport {
+namespace vpx_streamer {
 
 class SoftwareDecoder : public Decoder {
 public:
   SoftwareDecoder(DecoderDelegate* delegate);
   virtual ~SoftwareDecoder();
 
-  virtual bool createDecoder(int frameWidth, int frameHeight);
+  virtual bool initialize(int frameWidth, int frameHeight);
   virtual void decode(uint8_t* buffer, uint64_t size);
   virtual bool initialized();
 
@@ -24,7 +24,6 @@ private:
   vpx_codec_dec_cfg_t* decoder_config_;
 };
 
-} // namespace vpx_image_transport
-
+} // namespace vpx_streamer
 
 #endif // SOFTWARE_DECODER_H

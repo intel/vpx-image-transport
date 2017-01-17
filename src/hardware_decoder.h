@@ -9,16 +9,16 @@
 #include <VideoDecoderInterface.h>
 #include "decoder.h"
 
-namespace vpx_image_transport {
+namespace vpx_streamer {
 
 class HardwareDecoder : public Decoder {
 public:
   HardwareDecoder(DecoderDelegate* delegate, VADisplay vaDisplay, NativeDisplay* nativeDisplay);
   virtual ~HardwareDecoder();
 
-  virtual bool createDecoder(int frameWidth, int frameHeight);
-  virtual void decode(uint8_t* buffer, uint64_t size);
+  virtual bool initialize(int frameWidth, int frameHeight);
   virtual bool initialized();
+  virtual void decode(uint8_t* buffer, uint64_t size);
 
 private:
   YamiMediaCodec::IVideoDecoder* yami_decoder_;
@@ -26,6 +26,6 @@ private:
   SharedPtr<NativeDisplay> native_display_;
 };
 
-} // namespace vpx_image_transport
+} // namespace vpx_streamer
 
 #endif // HARDWARE_DECODER_H

@@ -9,7 +9,7 @@
 #include "decoder.h"
 #include "encoder.h"
 
-namespace vpx_image_transport {
+namespace vpx_streamer {
 
 class CodecFactory {
 public:
@@ -30,6 +30,6 @@ private:
   VADisplay va_display_;
 };
 
-} // namespace vpx_image_transport
+} // namespace vpx_streamer
 
 #endif // CODEC_FACTORY_H

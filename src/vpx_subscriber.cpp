@@ -9,6 +9,8 @@
 
 namespace vpx_image_transport {
 
+using namespace vpx_streamer;
+
 VPXSubscriber::VPXSubscriber()
   : stream_parser_(this), image_index_(0), user_callback_(NULL) {
 }

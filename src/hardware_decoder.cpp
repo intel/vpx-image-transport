@@ -8,7 +8,7 @@
 #include <va/va_x11.h>
 #include <VideoDecoderHost.h>
 
-namespace vpx_image_transport {
+namespace vpx_streamer {
 
 HardwareDecoder::HardwareDecoder(DecoderDelegate* delegate, VADisplay vaDisplay,
                                  NativeDisplay* nativeDisplay)
@@ -19,7 +19,7 @@ HardwareDecoder::HardwareDecoder(DecoderDelegate* delegate, VADisplay vaDisplay,
 HardwareDecoder::~HardwareDecoder() {
 }
 
-bool HardwareDecoder::createDecoder(int frameWidth, int frameHeight) {
+bool HardwareDecoder::initialize(int frameWidth, int frameHeight) {
   yami_decoder_ = createVideoDecoder(YAMI_MIME_VP8);
   if (!yami_decoder_) {
     ROS_ERROR("Failed to create yami decoder with mime type: %s.", YAMI_MIME_VP8);
@@ -101,4 +101,4 @@ bool HardwareDecoder::initialized() {
   return yami_decoder_ != NULL;
 }
 
-} // namespace vpx_image_transport
+} // namespace vpx_streamer

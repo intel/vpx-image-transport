@@ -8,7 +8,7 @@
 #include <va/va_x11.h>
 #include <VideoEncoderHost.h>
 
-namespace vpx_image_transport {
+namespace vpx_streamer {
 
 HardwareEncoder::HardwareEncoder(EncoderDelegate* delegate, NativeDisplay* display)
   : Encoder(delegate), encoder_(NULL), native_display_(display), max_output_buf_size_(0),
@@ -77,7 +77,7 @@ void HardwareEncoder::encode(const cv::Mat& mat) {
   free(output_buffer.data);
 }
 
-bool HardwareEncoder::createEncoder(int frameWidth, int frameHeight) {
+bool HardwareEncoder::initialize(int frameWidth, int frameHeight) {
   assert(!encoder_);
 
   YamiMediaCodec::IVideoEncoder* encoder = createVideoEncoder(YAMI_MIME_VP8);
@@ -140,4 +140,4 @@ void HardwareEncoder::disconnect() {
   }
 }
 
-} // namespace vpx_image_transport
+} // namespace vpx_streamer

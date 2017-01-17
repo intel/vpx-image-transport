@@ -7,7 +7,7 @@
 #include <ros/ros.h>
 #include <vpx/vp8cx.h>
 
-namespace vpx_image_transport {
+namespace vpx_streamer {
 
 SoftwareEncoder::SoftwareEncoder(EncoderDelegate* delegate)
   : Encoder(delegate), codec_context_(NULL), encoder_config_(NULL), frame_count_(0),
@@ -65,7 +65,7 @@ void SoftwareEncoder::encode(const cv::Mat& mat) {
   }
 }
 
-bool SoftwareEncoder::createEncoder(int frameWidth, int frameHeight) {
+bool SoftwareEncoder::initialize(int frameWidth, int frameHeight) {
   assert(!codec_context_);
 
   vpx_codec_err_t ret;
@@ -120,4 +120,4 @@ void SoftwareEncoder::connect() {
   frame_count_ = 0;
 }
 
-} // namespace vpx_image_transport
+} // namespace vpx_streamer

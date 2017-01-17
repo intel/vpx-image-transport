@@ -13,7 +13,7 @@
 #include "software_decoder.h"
 #include "software_encoder.h"
 
-namespace vpx_image_transport {
+namespace vpx_streamer {
 
 CodecFactory::CodecFactory() : va_display_(NULL) {
 }
@@ -124,4 +124,4 @@ bool CodecFactory::isHardwareAcceleratedDecoderSupported() {
   return finder != codecs.end() ? true : false;
 }
 
-} // namespace vpx_image_transport
+} // namespace vpx_streamer

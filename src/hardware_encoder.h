@@ -10,14 +10,14 @@
 #include <VideoEncoderInterface.h>
 #include "encoder.h"
 
-namespace vpx_image_transport {
+namespace vpx_streamer {
 
 class HardwareEncoder : public Encoder {
 public:
   HardwareEncoder(EncoderDelegate* delegate, NativeDisplay* display);
   virtual ~HardwareEncoder();
 
-  virtual bool createEncoder(int frameWidth, int frameHeight);
+  virtual bool initialize(int frameWidth, int frameHeight);
   virtual bool initialized();
   virtual void encode(const cv::Mat& mat);
   virtual void connect();
@@ -35,6 +35,6 @@ private:
   uint64_t frame_count_;
 };
 
-} // namespace vpx_image_transport
+} // namespace vpx_streamer
 
 #endif // YAMI_ENCODER_H

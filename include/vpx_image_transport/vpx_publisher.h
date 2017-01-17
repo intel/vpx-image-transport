@@ -16,7 +16,7 @@
 namespace vpx_image_transport {
 
 class VPXPublisher : public image_transport::SimplePublisherPlugin<vpx_image_transport::Packet>,
-                     public StreamMuxerDelegate
+                     public vpx_streamer::StreamMuxerDelegate
 {
 public:
   VPXPublisher();
@@ -47,7 +47,7 @@ private:
   boost::shared_ptr<ReconfigureServer> reconfigure_server_;
 
   mutable uint64_t package_sequence_;
-  mutable StreamMuxer stream_muxer_;
+  mutable vpx_streamer::StreamMuxer stream_muxer_;
   mutable const PublishFn* publish_function_;
   void configCallback(Config& config, uint32_t level);
 };

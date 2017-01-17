@@ -8,7 +8,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <ros/ros.h>
 
-namespace vpx_image_transport {
+namespace vpx_streamer {
 
 using namespace mkvparser;
 
@@ -114,7 +114,6 @@ void StreamParser::decodeStream(const std::vector<uint8_t>& buffer) {
     processBlockEntry(current);
     current_block_ = current;
   }
-
 }
 
 const BlockEntry* StreamParser::retriveBlockEntry(const BlockEntry* current) {
@@ -142,7 +141,7 @@ void StreamParser::processBlockEntry(const BlockEntry* entry) {
                             + (position - bytes_consumed_) * sizeof(uint8_t));
 
     if (!decoder_->initialized()) {
-      if (!decoder_->createDecoder(track_->GetWidth(), track_->GetHeight())) {
+      if (!decoder_->initialize(track_->GetWidth(), track_->GetHeight())) {
         ROS_WARN("Failed to create decoder, will retry.");
         return;
       }
@@ -155,4 +154,4 @@ void StreamParser::onFrameDecoded(const cv::Mat& bgr) {
   delegate_->onImageDecoded(bgr);
 }
 
-} // namespace vpx_image_transport
+} // namespace vpx_streamer

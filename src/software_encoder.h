@@ -9,14 +9,14 @@
 #include <vpx/vpx_encoder.h>
 #include "encoder.h"
 
-namespace vpx_image_transport {
+namespace vpx_streamer {
 
 class SoftwareEncoder : public Encoder {
 public:
   SoftwareEncoder(EncoderDelegate* delegate);
   virtual ~SoftwareEncoder();
 
-  virtual bool createEncoder(int frameWidth, int frameHeight);
+  virtual bool initialize(int frameWidth, int frameHeight);
   virtual bool initialized();
   virtual void encode(const cv::Mat& mat);
   virtual void configure(const EncoderConfig& config);
@@ -29,6 +29,6 @@ private:
   unsigned int keyframe_forced_interval_;
 };
 
-} // namespace vpx_image_transport
+} // namespace vpx_streamer
 
 #endif // SOFTWARE_ENCODER_H

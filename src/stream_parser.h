@@ -12,7 +12,7 @@
 #include "codec_factory.h"
 #include "decoder.h"
 
-namespace vpx_image_transport {
+namespace vpx_streamer {
 
 class StreamParserDelegate {
 public:
@@ -48,6 +48,6 @@ private:
   friend class StreamBufferManager;
 };
 
-} // namespace vpx_image_transport
+} // namespace vpx_streamer
 
 #endif // STREAM_PARSER_H

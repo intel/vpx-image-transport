@@ -9,6 +9,8 @@
 
 namespace vpx_image_transport {
 
+using namespace vpx_streamer;
+
 VPXPublisher::VPXPublisher()
   : package_sequence_(0), stream_muxer_(this), publish_function_(NULL) {
 }

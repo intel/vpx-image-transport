@@ -6,7 +6,7 @@
 
 #include <ros/ros.h>
 
-namespace vpx_image_transport {
+namespace vpx_streamer {
 
 using namespace webm_tools;
 using namespace mkvmuxer;
@@ -56,7 +56,7 @@ void StreamMuxer::encodeImage(const cv::Mat& bgr, int frameWidth, int frameHeigh
     return;
   }
   if (!encoder_->initialized()) {
-    if (!encoder_->createEncoder(frameWidth, frameHeight)) {
+    if (!encoder_->initialize(frameWidth, frameHeight)) {
       ROS_WARN("Failed to create encoder, will retry.");
       return;
     }
@@ -95,4 +95,4 @@ void StreamMuxer::onWriteFrame(uint8_t* buffer, uint64_t size,
   muxer_->WriteVideoFrame(buffer, size, timeStamp, isKeyFrame);
 }
 
-} // namespace vpx_image_transport
+} // namespace vpx_streamer

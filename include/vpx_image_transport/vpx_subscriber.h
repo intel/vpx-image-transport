@@ -13,7 +13,7 @@ namespace vpx_image_transport {
 
 class VPXSubscriber
   : public image_transport::SimpleSubscriberPlugin<vpx_image_transport::Packet>,
-    public StreamParserDelegate {
+    public vpx_streamer::StreamParserDelegate {
 public:
   VPXSubscriber();
   virtual ~VPXSubscriber();
@@ -28,7 +28,7 @@ private:
   // StreamParserDelegate implementation
   virtual void onImageDecoded(const cv::Mat& bgr);
 
-  StreamParser stream_parser_;
+  vpx_streamer::StreamParser stream_parser_;
   unsigned long image_index_;
   const Callback* user_callback_;
 };

@@ -7,7 +7,7 @@
 
 #include <opencv2/imgproc/imgproc.hpp>
 
-namespace vpx_image_transport {
+namespace vpx_streamer {
 
 class EncoderDelegate {
 public:
@@ -24,7 +24,7 @@ class Encoder {
 public:
   virtual ~Encoder() = 0;
 
-  virtual bool createEncoder(int frameWidth, int frameHeight) = 0;
+  virtual bool initialize(int frameWidth, int frameHeight) = 0;
   virtual bool initialized() = 0;
   virtual void encode(const cv::Mat& mat) = 0;
   virtual void configure(const EncoderConfig& config) {};
@@ -37,5 +37,5 @@ protected:
   EncoderDelegate *delegate_;
 };
 
-} // namespace vpx_image_transport
+} // namespace vpx_streamer
 #endif // ENCODER_H
