@@ -4,7 +4,7 @@
 
 #include "stream_muxer.h"
 
-#include <ros/ros.h>
+#include "stream_logger.h"
 
 namespace vpx_streamer {
 
@@ -39,12 +39,12 @@ void StreamMuxer::connect() {
 void StreamMuxer::disconnect() {
   int ret = muxer_->Finalize();
   if (ret != WebMLiveMuxer::kSuccess) {
-    ROS_ERROR("Failed to finalize live muxer with error code: %d", ret);
+    STREAM_LOG_ERROR("Failed to finalize live muxer with error code: %d", ret);
     return;
   }
   int chunk_length = 0;
   if (!muxer_->ChunkReady(&chunk_length)) {
-    ROS_ERROR("Failed to get chunk after finalized called.");
+    STREAM_LOG_ERROR("Failed to get chunk after finalized called.");
   }
 
   encoder_->disconnect();
@@ -52,12 +52,12 @@ void StreamMuxer::disconnect() {
 
 void StreamMuxer::encodeImage(const cv::Mat& bgr, int frameWidth, int frameHeight) {
   if (!muxer_) {
-    ROS_WARN("Failed to create muxer, will wait for the connection.");
+    STREAM_LOG_WARN("Failed to create muxer, will wait for the connection.");
     return;
   }
   if (!encoder_->initialized()) {
     if (!encoder_->initialize(frameWidth, frameHeight)) {
-      ROS_WARN("Failed to create encoder, will retry.");
+      STREAM_LOG_WARN("Failed to create encoder, will retry.");
       return;
     }
   }
@@ -80,7 +80,7 @@ void StreamMuxer::encodeImage(const cv::Mat& bgr, int frameWidth, int frameHeigh
   uint8_t* data = buffer.data();
   int ret = muxer_->ReadChunk(chunk_length, data);
   if (WebMLiveMuxer::kSuccess != ret) {
-    ROS_ERROR("Failed to read chunk with error code: %d", ret);
+    STREAM_LOG_ERROR("Failed to read chunk with error code: %d", ret);
     return;
   }
   delegate_->onChunkReady(buffer);
@@ -89,7 +89,7 @@ void StreamMuxer::encodeImage(const cv::Mat& bgr, int frameWidth, int frameHeigh
 void StreamMuxer::onWriteFrame(uint8_t* buffer, uint64_t size,
                                uint64_t timeStamp, bool isKeyFrame) {
   if (!muxer_) {
-    ROS_WARN("Failed to create muxer, will wait for the connection.");
+    STREAM_LOG_WARN("Failed to create muxer, will wait for the connection.");
     return;
   }
   muxer_->WriteVideoFrame(buffer, size, timeStamp, isKeyFrame);

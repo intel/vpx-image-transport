@@ -182,6 +182,7 @@ add_library(${PROJECT_NAME}
   src/streamer/hardware_decoder.cpp
   src/streamer/software_encoder.cpp
   src/streamer/software_decoder.cpp
+  src/streamer/stream_logger.cpp
   src/streamer/stream_muxer.cpp
   src/streamer/stream_parser.cpp
 )

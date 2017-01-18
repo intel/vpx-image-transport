@@ -4,9 +4,9 @@
 
 #include "hardware_encoder.h"
 
-#include <ros/ros.h>
 #include <va/va_x11.h>
 #include <VideoEncoderHost.h>
+#include "stream_logger.h"
 
 namespace vpx_streamer {
 
@@ -57,7 +57,7 @@ void HardwareEncoder::encode(const cv::Mat& mat) {
 
   YamiStatus status = encoder_->encode(&input_buffer);
   if (status != ENCODE_SUCCESS) {
-    ROS_WARN("Failed to encode input buffer.");
+    STREAM_LOG_WARN("Failed to encode input buffer.");
     return;
   }
 
@@ -82,7 +82,7 @@ bool HardwareEncoder::initialize(int frameWidth, int frameHeight) {
 
   YamiMediaCodec::IVideoEncoder* encoder = createVideoEncoder(YAMI_MIME_VP8);
   if (!encoder) {
-    ROS_ERROR("Failed to create VP8 yami encoder.");
+    STREAM_LOG_ERROR("Failed to create VP8 yami encoder.");
     return false;
   }
 
@@ -91,7 +91,7 @@ bool HardwareEncoder::initialize(int frameWidth, int frameHeight) {
   params.size = sizeof(VideoParamsCommon);
   YamiStatus s = encoder->getParameters(VideoParamsTypeCommon, &params);
   if (s != YAMI_SUCCESS) {
-    ROS_ERROR("Failed to get parameters before set.");
+    STREAM_LOG_ERROR("Failed to get parameters before set.");
     return false;
   }
   params.resolution.width = frameWidth;
@@ -101,13 +101,13 @@ bool HardwareEncoder::initialize(int frameWidth, int frameHeight) {
   params.rcParams.bitRate = 5000;
   s = encoder->setParameters(VideoParamsTypeCommon, &params);
   if (s != YAMI_SUCCESS) {
-    ROS_ERROR("Failed to set parameters for yami encoder, status code:%d", s);
+    STREAM_LOG_ERROR("Failed to set parameters for yami encoder, status code:%d", s);
     return false;
   }
 
   s = encoder->start();
   if (s != YAMI_SUCCESS) {
-    ROS_ERROR("Failed to start yami encoder, status code:%d", s);
+    STREAM_LOG_ERROR("Failed to start yami encoder, status code:%d", s);
     return false;
   }
   encoder->getMaxOutSize(&max_output_buf_size_);
@@ -122,7 +122,7 @@ void HardwareEncoder::connect() {
   if (encoder_) {
     YamiStatus s = encoder_->start();
     if (s != YAMI_SUCCESS) {
-      ROS_ERROR("Failed to start yami encoder when connect, status code:%d", s);
+      STREAM_LOG_ERROR("Failed to start yami encoder when connect, status code:%d", s);
       return;
     }
   }
@@ -134,7 +134,7 @@ void HardwareEncoder::disconnect() {
     encoder_->flush();
     YamiStatus s = encoder_->stop();
     if (s != YAMI_SUCCESS) {
-      ROS_ERROR("Failed to start yami encoder when disconnect, status code:%d", s);
+      STREAM_LOG_ERROR("Failed to start yami encoder when disconnect, status code:%d", s);
       return;
     }
   }

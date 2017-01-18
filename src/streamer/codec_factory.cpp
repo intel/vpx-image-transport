@@ -4,7 +4,6 @@
 
 #include "codec_factory.h"
 
-#include <ros/ros.h>
 #include <va/va_x11.h>
 #include <VideoEncoderHost.h>
 #include <VideoDecoderHost.h>
@@ -12,6 +11,7 @@
 #include "hardware_encoder.h"
 #include "software_decoder.h"
 #include "software_encoder.h"
+#include "stream_logger.h"
 
 namespace vpx_streamer {
 
@@ -50,14 +50,14 @@ Decoder* CodecFactory::createDecoder(DecoderDelegate* delegate, CreationMethod m
 bool CodecFactory::initDisplay() {
   Display* display = XOpenDisplay(NULL);
   if (!display) {
-    ROS_ERROR("Failed to open X display.");
+    STREAM_LOG_ERROR("Failed to open X display.");
     return false;
   }
   va_display_ = vaGetDisplay(display);
   int major, minor;
   VAStatus status = vaInitialize(va_display_, &major, &minor);
   if (status != VA_STATUS_SUCCESS) {
-    ROS_ERROR("Failed to init va, with status code:%d", status);
+    STREAM_LOG_ERROR("Failed to init va, with status code:%d", status);
     return false;
   }
   return true;
@@ -72,7 +72,7 @@ bool CodecFactory::isHardwareAcceleratedEncoderSupported() {
   int num_of_entry_points = 0;
   VAStatus s = vaQueryConfigEntrypoints(va_display_, VAProfileVP8Version0_3, entry_points, &num_of_entry_points);
   if (s != VA_STATUS_SUCCESS) {
-    ROS_ERROR("Failed to query VA config entry points.");
+    STREAM_LOG_ERROR("Failed to query VA config entry points.");
     return false;
   }
   bool vp8_encoder_supported = false;
@@ -102,7 +102,7 @@ bool CodecFactory::isHardwareAcceleratedDecoderSupported() {
   int num_of_entry_points = 0;
   VAStatus s = vaQueryConfigEntrypoints(va_display_, VAProfileVP8Version0_3, entry_points, &num_of_entry_points);
   if (s != VA_STATUS_SUCCESS) {
-    ROS_ERROR("Failed to query config entry points.");
+    STREAM_LOG_ERROR("Failed to query config entry points.");
     return false;
   }
   bool vp8_decoder_supported = false;

@@ -5,8 +5,8 @@
 #include "software_decoder.h"
 
 #include <memory>
-#include <ros/ros.h>
 #include <vpx/vp8dx.h>
+#include "stream_logger.h"
 
 namespace vpx_streamer {
 
@@ -16,7 +16,7 @@ SoftwareDecoder::SoftwareDecoder(DecoderDelegate* delegate)
 
 SoftwareDecoder::~SoftwareDecoder() {
   if (VPX_CODEC_OK != vpx_codec_destroy(codec_context_)) {
-    ROS_ERROR("Failed to destroy VPX decoder context.");
+    STREAM_LOG_ERROR("Failed to destroy VPX decoder context.");
   }
   delete codec_context_;
   delete decoder_config_;
@@ -31,7 +31,7 @@ bool SoftwareDecoder::initialize(int frameWidth, int frameHeight) {
 
   long long ret = vpx_codec_dec_init(codec_context_, vpx_codec_vp8_dx(), decoder_config_, 0);
   if (ret) {
-    ROS_ERROR("Failed to initialize VPX context. Error No.:%lld", ret);
+    STREAM_LOG_ERROR("Failed to initialize VPX context. Error No.:%lld", ret);
     return false;
   }
   return true;
@@ -41,7 +41,7 @@ void SoftwareDecoder::decode(uint8_t* buffer, uint64_t size) {
   assert(codec_context_);
   const vpx_codec_err_t err = vpx_codec_decode(codec_context_, buffer, size, NULL, 0);
   if (err != VPX_CODEC_OK) {
-    ROS_ERROR("Failed to decode frame, VPX error code:%d", err);
+    STREAM_LOG_ERROR("Failed to decode frame, VPX error code:%d", err);
     return;
   }
   vpx_codec_iter_t iter = NULL;

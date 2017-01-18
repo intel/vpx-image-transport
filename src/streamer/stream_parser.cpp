@@ -6,7 +6,7 @@
 
 #include <algorithm>
 #include <opencv2/imgproc/imgproc.hpp>
-#include <ros/ros.h>
+#include "stream_logger.h"
 
 namespace vpx_streamer {
 
@@ -31,7 +31,7 @@ StreamBufferManager::StreamBufferManager(StreamParser *parser)
 
 StreamBufferManager::~StreamBufferManager() {
   if (bytes_read_ == -1) {
-    ROS_WARN("More data required, waiting for the next chunk...");
+    STREAM_LOG_WARN("More data required, waiting for the next chunk...");
     return;
   }
   parser_->buffer_.erase(parser_->buffer_.begin(),
@@ -48,24 +48,24 @@ bool StreamBufferManager::load(const std::vector<uint8_t>& payload) {
 
   switch(status) {
     case webm_tools::WebMFile::kInvalidWebM:
-      ROS_ERROR("Invalid WebM.");
+      STREAM_LOG_ERROR("Invalid WebM.");
       return false;
     case webm_tools::WebMFile::kParsingError:
-      ROS_ERROR("Parsing error.");
+      STREAM_LOG_ERROR("Parsing error.");
       return false;
     case webm_tools::WebMFile::kParsingHeader:
-      ROS_INFO("Parsing header, bytes read:%d", bytes_read_);
+      STREAM_LOG_INFO("Parsing header, bytes read:%d", bytes_read_);
       return false;
     case webm_tools::WebMFile::kParsingClusters:
       break;
     case webm_tools::WebMFile::kParsingFinalElements:
-      ROS_INFO("Parsing final elements, bytes read:%d", bytes_read_);
+      STREAM_LOG_INFO("Parsing final elements, bytes read:%d", bytes_read_);
       break;
     case webm_tools::WebMFile::kParsingDone:
-      ROS_INFO("Parsing done, bytes read:%d", bytes_read_);
+      STREAM_LOG_INFO("Parsing done, bytes read:%d", bytes_read_);
       break;
     default:
-      ROS_INFO("Unknown status:%d, bytes read:%d", status, bytes_read_);
+      STREAM_LOG_INFO("Unknown status:%d, bytes read:%d", status, bytes_read_);
   }
   return true;
 }
@@ -95,14 +95,14 @@ void StreamParser::decodeStream(const std::vector<uint8_t>& buffer) {
   if (!track_) {
     const Tracks* tracks = webm_file_->GetSegment()->GetTracks();
     if (!tracks) {
-      ROS_WARN("Failed to get tracks, will retry.");
+      STREAM_LOG_WARN("Failed to get tracks, will retry.");
       return;
     }
 
     assert(tracks->GetTracksCount() == 1);
     const Track* track = tracks->GetTrackByIndex(0);
     if (!track) {
-      ROS_WARN("Failed to get first track in tracks, will retry.");
+      STREAM_LOG_WARN("Failed to get first track in tracks, will retry.");
       return;
     }
     assert(track->GetType() == Track::kVideo);
@@ -130,7 +130,7 @@ void StreamParser::processBlockEntry(const BlockEntry* entry) {
   assert(entry->GetKind() == BlockEntry::kBlockSimple);
   const Block* block = entry->GetBlock();
   if (!block) {
-    ROS_ERROR("Failed to get block from block entry");
+    STREAM_LOG_ERROR("Failed to get block from block entry");
     return;
   }
 
@@ -142,7 +142,7 @@ void StreamParser::processBlockEntry(const BlockEntry* entry) {
 
     if (!decoder_->initialized()) {
       if (!decoder_->initialize(track_->GetWidth(), track_->GetHeight())) {
-        ROS_WARN("Failed to create decoder, will retry.");
+        STREAM_LOG_WARN("Failed to create decoder, will retry.");
         return;
       }
     }

@@ -4,9 +4,9 @@
 
 #include "hardware_decoder.h"
 
-#include <ros/ros.h>
 #include <va/va_x11.h>
 #include <VideoDecoderHost.h>
+#include "stream_logger.h"
 
 namespace vpx_streamer {
 
@@ -22,7 +22,7 @@ HardwareDecoder::~HardwareDecoder() {
 bool HardwareDecoder::initialize(int frameWidth, int frameHeight) {
   yami_decoder_ = createVideoDecoder(YAMI_MIME_VP8);
   if (!yami_decoder_) {
-    ROS_ERROR("Failed to create yami decoder with mime type: %s.", YAMI_MIME_VP8);
+    STREAM_LOG_ERROR("Failed to create yami decoder with mime type: %s.", YAMI_MIME_VP8);
     return false;
   }
 
@@ -56,14 +56,14 @@ void HardwareDecoder::decode(uint8_t* buffer, uint64_t size) {
       VAImage image;
       VAStatus s = vaDeriveImage(va_display_, frame->surface, &image);
       if (s != VA_STATUS_SUCCESS) {
-        ROS_ERROR("Failed to derive VA image. status code:%d", s);
+        STREAM_LOG_ERROR("Failed to derive VA image. status code:%d", s);
         return;
       }
 
       void* image_buf = NULL;
       s = vaMapBuffer(va_display_, image.buf, &image_buf);
       if (s != VA_STATUS_SUCCESS) {
-        ROS_ERROR("Fail to map buffer from VAImage, status code:%d", s);
+        STREAM_LOG_ERROR("Fail to map buffer from VAImage, status code:%d", s);
         return;
       }
 
@@ -91,9 +91,9 @@ void HardwareDecoder::decode(uint8_t* buffer, uint64_t size) {
       vaDestroyImage(va_display_, image.image_id);
     }
   } else if (status == DECODE_FORMAT_CHANGE) {
-    ROS_INFO("Decode format change.");
+    STREAM_LOG_INFO("Decode format change.");
   } else {
-    ROS_WARN("Unknown decode status code:%d", status);
+    STREAM_LOG_WARN("Unknown decode status code:%d", status);
   }
 }
 

@@ -4,8 +4,8 @@
 
 #include "software_encoder.h"
 
-#include <ros/ros.h>
 #include <vpx/vp8cx.h>
+#include "stream_logger.h"
 
 namespace vpx_streamer {
 
@@ -17,7 +17,7 @@ SoftwareEncoder::SoftwareEncoder(EncoderDelegate* delegate)
 SoftwareEncoder::~SoftwareEncoder() {
   if (codec_context_) {
     if (VPX_CODEC_OK != vpx_codec_destroy(codec_context_)) {
-      ROS_ERROR("Failed to destroy VPX encoder context.");
+      STREAM_LOG_ERROR("Failed to destroy VPX encoder context.");
     }
     delete codec_context_;
   }
@@ -38,7 +38,7 @@ void SoftwareEncoder::encode(const cv::Mat& mat) {
 
   if (!vpx_img_wrap(&image, VPX_IMG_FMT_I420, encoder_config_->g_w,
                     encoder_config_->g_h, 1, i420.data)) {
-    ROS_ERROR("Failed to wrap cv::Mat into vpx image.");
+    STREAM_LOG_ERROR("Failed to wrap cv::Mat into vpx image.");
     return;
   }
 
@@ -50,7 +50,7 @@ void SoftwareEncoder::encode(const cv::Mat& mat) {
   const vpx_codec_cx_pkt_t *pkt = NULL;
 
   const vpx_codec_err_t ret = vpx_codec_encode(codec_context_, &image,
-     ros::Time::now().toNSec(), 1, flags, VPX_DL_REALTIME);
+     0, 1, flags, VPX_DL_REALTIME);
   if (ret != VPX_CODEC_OK) {
     return;
   }
@@ -60,7 +60,7 @@ void SoftwareEncoder::encode(const cv::Mat& mat) {
       bool keyframe = (pkt->data.frame.flags & VPX_FRAME_IS_KEY) != 0;
       delegate_->onWriteFrame(reinterpret_cast<uint8_t*>(pkt->data.frame.buf), pkt->data.frame.sz, ++frame_count_, keyframe);
     } else {
-      ROS_INFO("pkt->kind: %d", pkt->kind);
+      STREAM_LOG_INFO("pkt->kind: %d", pkt->kind);
     }
   }
 }
@@ -73,7 +73,7 @@ bool SoftwareEncoder::initialize(int frameWidth, int frameHeight) {
     encoder_config_ = new vpx_codec_enc_cfg();
     ret = vpx_codec_enc_config_default(vpx_codec_vp8_cx(), encoder_config_, 0);
     if (ret) {
-      ROS_ERROR("Failed to get default encoder configuration. Error No.: %d", ret);
+      STREAM_LOG_ERROR("Failed to get default encoder configuration. Error No.: %d", ret);
       return false;
     }
   }
@@ -84,7 +84,7 @@ bool SoftwareEncoder::initialize(int frameWidth, int frameHeight) {
   codec_context_ = new vpx_codec_ctx_t();
   ret = vpx_codec_enc_init(codec_context_, vpx_codec_vp8_cx(), encoder_config_, 0);
   if (ret) {
-    ROS_ERROR("Failed to initialize VPX encoder. Error No.:%d", ret);
+    STREAM_LOG_ERROR("Failed to initialize VPX encoder. Error No.:%d", ret);
     return false;
   }
   return true;
@@ -100,7 +100,7 @@ void SoftwareEncoder::configure(const EncoderConfig& config) {
     encoder_config_ = new vpx_codec_enc_cfg();
     ret = vpx_codec_enc_config_default(vpx_codec_vp8_cx(), encoder_config_, 0);
     if (ret) {
-      ROS_ERROR("Failed to get default encoder configuration. Error No.: %d", ret);
+      STREAM_LOG_ERROR("Failed to get default encoder configuration. Error No.: %d", ret);
     }
   }
 
@@ -111,7 +111,7 @@ void SoftwareEncoder::configure(const EncoderConfig& config) {
   if (codec_context_) {
     ret = vpx_codec_enc_config_set(codec_context_, encoder_config_);
     if (ret) {
-      ROS_ERROR("Failed to update codec configuration. Error No.:%d", ret);
+      STREAM_LOG_ERROR("Failed to update codec configuration. Error No.:%d", ret);
     }
   }
 }
