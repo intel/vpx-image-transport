@@ -1,5 +1,5 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 90d6525..c73f978 100644
+index 90d6525..a25b10c 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -6,26 +6,45 @@
@@ -25,6 +25,9 @@ index 90d6525..c73f978 100644
 -                    "${WEBMTOOLS_SRC_DIR}/shared")
 -
 -add_executable(webm_info
++
++#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c++11")
++set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 +
 +ExternalProject_Add(libwebm
 +  PREFIX libwebm
@@ -57,83 +60,47 @@ index 90d6525..c73f978 100644
 +add_dependencies(${PROJECT_NAME} libwebm)
 +
 +target_link_libraries(${PROJECT_NAME} LINK_PUBLIC
-+  ${binary_dir}/libmkvmuxer.so
-+  ${binary_dir}/libmkvparser.so
-+  ${binary_dir}/libwebm_parser.so
 +  ${binary_dir}/libwebm.so)
 
 -target_link_libraries(webm_info LINK_PUBLIC webm)
 +install(TARGETS ${PROJECT_NAME} DESTINATION lib)
 diff --git a/libwebm.patch b/libwebm.patch
 new file mode 100644
-index 0000000..1b2d813
+index 0000000..e21d9e0
 --- /dev/null
 +++ b/libwebm.patch
-@@ -0,0 +1,64 @@
+@@ -0,0 +1,31 @@
 +diff --git a/CMakeLists.txt b/CMakeLists.txt
-+index ad7bea4..0b84d2a 100644
++index 8724afb..88dba05 100644
 +--- a/CMakeLists.txt
 ++++ b/CMakeLists.txt
-+@@ -18,7 +18,7 @@ option(ENABLE_WEBMINFO "Enables building webm_info." ON)
++@@ -13,13 +13,16 @@ include("${CMAKE_CURRENT_SOURCE_DIR}/build/msvc_runtime.cmake")
++
++ set(LIBWEBM_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
++
+++set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC -std=c++11")
+++set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -std=c++11")
+++
++ # Build/test configuration flags.
++ option(ENABLE_WEBMTS "Enables WebM PES/TS support." ON)
++ option(ENABLE_WEBMINFO "Enables building webm_info." ON)
 + option(ENABLE_TESTS "Enables tests." OFF)
 + option(ENABLE_IWYU "Enables include-what-you-use support." OFF)
 + option(ENABLE_WERROR "Enable warnings as errors." OFF)
 +-option(ENABLE_WEBM_PARSER "Enables new parser API." OFF)
 ++option(ENABLE_WEBM_PARSER "Enables new parser API." ON)
-+ set(GTEST_SRC_DIR "${LIBWEBM_SRC_DIR}/../googletest" CACHE PATH
-+     "Path to Googletest git repository.")
 +
-+@@ -45,7 +45,7 @@ set(CMAKE_CXX_FLAGS "-D__STDC_LIMIT_MACROS ${CMAKE_CXX_FLAGS}")
++ if (ENABLE_TESTS OR ENABLE_WEBMTS OR ENABLE_WEBMINFO OR ENABLE_WEBM_PARSER)
++   require_cxx_flag_nomsvc("-std=c++11")
++@@ -316,7 +319,7 @@ add_library(mkvmuxer OBJECT ${mkvmuxer_sources})
++ add_library(mkvparser OBJECT ${mkvparser_sources})
++ add_library(webvtt_common OBJECT ${webvtt_common_sources})
 +
-+ # mkvmuxer section.
-+ # TODO(tomfinegan): move to mkvmuxer/CMakeLists.txt
-+-add_library(mkvmuxer STATIC
-++add_library(mkvmuxer SHARED
-+             "${LIBWEBM_SRC_DIR}/mkvmuxer/mkvmuxer.cc"
-+             "${LIBWEBM_SRC_DIR}/mkvmuxer/mkvmuxer.h"
-+             "${LIBWEBM_SRC_DIR}/mkvmuxer/mkvmuxertypes.h"
-+@@ -57,7 +57,7 @@ add_library(mkvmuxer STATIC
++-add_library(webm STATIC ${libwebm_common_sources}
+++add_library(webm SHARED ${libwebm_common_sources}
++             $<TARGET_OBJECTS:mkvmuxer>
++             $<TARGET_OBJECTS:mkvparser>)
 +
-+ # mkvparser section.
-+ # TODO(tomfinegan): move to mkvparser/CMakeLists.txt.
-+-add_library(mkvparser STATIC
-++add_library(mkvparser SHARED
-+             "${LIBWEBM_SRC_DIR}/mkvparser/mkvparser.cc"
-+             "${LIBWEBM_SRC_DIR}/mkvparser/mkvparser.h"
-+             "${LIBWEBM_SRC_DIR}/mkvparser/mkvreader.cc"
-+@@ -71,7 +71,7 @@ add_library(mkvparser STATIC
-+ # TODO(tomfinegan): add doxygen generation target.
-+ if (ENABLE_WEBM_PARSER)
-+ include_directories(webm_parser webm_parser/include)
-+-add_library(webm_parser STATIC
-++add_library(webm_parser SHARED
-+             "${LIBWEBM_SRC_DIR}/webm_parser/include/webm/buffer_reader.h"
-+             "${LIBWEBM_SRC_DIR}/webm_parser/include/webm/callback.h"
-+             "${LIBWEBM_SRC_DIR}/webm_parser/include/webm/dom_types.h"
-+@@ -164,7 +164,7 @@ add_library(webm_parser STATIC
-+ endif()
-+
-+ # Libwebm section.
-+-add_library(webm STATIC
-++add_library(webm SHARED
-+             "${LIBWEBM_SRC_DIR}/common/file_util.cc"
-+             "${LIBWEBM_SRC_DIR}/common/file_util.h"
-+             "${LIBWEBM_SRC_DIR}/common/hdr_util.cc"
-+@@ -241,11 +241,13 @@ endif ()
-+
-+ if (ENABLE_WEBMTS)
-+   # webmts (PES/TS support) library section.
-+-  add_library(webmts
-++  add_library(webmts SHARED
-+               "${LIBWEBM_SRC_DIR}/common/libwebm_util.cc"
-+               "${LIBWEBM_SRC_DIR}/common/libwebm_util.h"
-+               "${LIBWEBM_SRC_DIR}/common/video_frame.cc"
-+               "${LIBWEBM_SRC_DIR}/common/video_frame.h"
-++              "${LIBWEBM_SRC_DIR}/common/file_util.cc"
-++              "${LIBWEBM_SRC_DIR}/common/file_util.h"
-+               "${LIBWEBM_SRC_DIR}/m2ts/vpxpes2ts.cc"
-+               "${LIBWEBM_SRC_DIR}/m2ts/vpxpes2ts.h"
-+               "${LIBWEBM_SRC_DIR}/m2ts/vpxpes_parser.cc"
 diff --git a/shared/webm_chunk_writer.cc b/shared/webm_chunk_writer.cc
 index 527be6b..84e8de5 100644
 --- a/shared/webm_chunk_writer.cc
