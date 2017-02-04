@@ -5,6 +5,7 @@
 #ifndef SOFTWARE_DECODER_H
 #define SOFTWARE_DECODER_H
 
+#include <boost/shared_ptr.hpp>
 #include <vpx/vpx_decoder.h>
 #include "decoder.h"
 
@@ -20,8 +21,8 @@ public:
   virtual bool initialized();
 
 private:
-  vpx_codec_ctx_t* codec_context_;
-  vpx_codec_dec_cfg_t* decoder_config_;
+  boost::shared_ptr<vpx_codec_ctx_t> codec_context_;
+  boost::shared_ptr<vpx_codec_dec_cfg_t> decoder_config_;
 };
 
 } // namespace vpx_streamer

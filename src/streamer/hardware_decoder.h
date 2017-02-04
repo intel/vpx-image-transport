@@ -5,6 +5,7 @@
 #ifndef HARDWARE_DECODER_H
 #define HARDWARE_DECODER_H
 
+#include <boost/shared_ptr.hpp>
 #include <va/va.h>
 #include <VideoDecoderInterface.h>
 #include "decoder.h"
@@ -21,7 +22,7 @@ public:
   virtual void decode(uint8_t* buffer, uint64_t size);
 
 private:
-  YamiMediaCodec::IVideoDecoder* yami_decoder_;
+  boost::shared_ptr<YamiMediaCodec::IVideoDecoder> yami_decoder_;
   VADisplay va_display_;
   SharedPtr<NativeDisplay> native_display_;
 };

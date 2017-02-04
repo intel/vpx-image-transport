@@ -11,15 +11,12 @@
 namespace vpx_streamer {
 
 HardwareEncoder::HardwareEncoder(EncoderDelegate* delegate, NativeDisplay* display)
-  : Encoder(delegate), encoder_(NULL), native_display_(display), max_output_buf_size_(0),
+  : Encoder(delegate), native_display_(display), max_output_buf_size_(0),
     keyframe_forced_interval_(4), frame_count_(0) {
 }
 
 HardwareEncoder::~HardwareEncoder() {
-  if (encoder_) {
-    releaseVideoEncoder(encoder_);
-    delete encoder_;
-  }
+  releaseVideoEncoder(encoder_.get());
 }
 
 void HardwareEncoder::fillVideoFrame(VideoFrameRawData* frame, const cv::Mat& mat,
@@ -78,18 +75,18 @@ void HardwareEncoder::encode(const cv::Mat& mat) {
 }
 
 bool HardwareEncoder::initialize(int frameWidth, int frameHeight) {
-  assert(!encoder_);
+  assert(encoder_ == NULL);
 
-  YamiMediaCodec::IVideoEncoder* encoder = createVideoEncoder(YAMI_MIME_VP8);
-  if (!encoder) {
+  encoder_.reset(createVideoEncoder(YAMI_MIME_VP8));
+  if (encoder_ == NULL) {
     STREAM_LOG_ERROR("Failed to create VP8 yami encoder.");
     return false;
   }
 
-  encoder->setNativeDisplay(native_display_.get());
+  encoder_->setNativeDisplay(native_display_.get());
   VideoParamsCommon params;
   params.size = sizeof(VideoParamsCommon);
-  YamiStatus s = encoder->getParameters(VideoParamsTypeCommon, &params);
+  YamiStatus s = encoder_->getParameters(VideoParamsTypeCommon, &params);
   if (s != YAMI_SUCCESS) {
     STREAM_LOG_ERROR("Failed to get parameters before set.");
     return false;
@@ -99,19 +96,18 @@ bool HardwareEncoder::initialize(int frameWidth, int frameHeight) {
   params.intraPeriod = keyframe_forced_interval_;
   params.rcMode = RATE_CONTROL_CQP;
   params.rcParams.bitRate = 5000;
-  s = encoder->setParameters(VideoParamsTypeCommon, &params);
+  s = encoder_->setParameters(VideoParamsTypeCommon, &params);
   if (s != YAMI_SUCCESS) {
     STREAM_LOG_ERROR("Failed to set parameters for yami encoder, status code:%d", s);
     return false;
   }
 
-  s = encoder->start();
+  s = encoder_->start();
   if (s != YAMI_SUCCESS) {
     STREAM_LOG_ERROR("Failed to start yami encoder, status code:%d", s);
     return false;
   }
-  encoder->getMaxOutSize(&max_output_buf_size_);
-  encoder_ = encoder;
+  encoder_->getMaxOutSize(&max_output_buf_size_);
   return true;
 }
 

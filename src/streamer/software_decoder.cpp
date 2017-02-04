@@ -11,25 +11,23 @@
 namespace vpx_streamer {
 
 SoftwareDecoder::SoftwareDecoder(DecoderDelegate* delegate)
-  : Decoder(delegate), codec_context_(NULL), decoder_config_(NULL)  {
+  : Decoder(delegate) {
 }
 
 SoftwareDecoder::~SoftwareDecoder() {
-  if (VPX_CODEC_OK != vpx_codec_destroy(codec_context_)) {
+  if (VPX_CODEC_OK != vpx_codec_destroy(codec_context_.get())) {
     STREAM_LOG_ERROR("Failed to destroy VPX decoder context.");
   }
-  delete codec_context_;
-  delete decoder_config_;
 }
 
 bool SoftwareDecoder::initialize(int frameWidth, int frameHeight) {
-  codec_context_ = new vpx_codec_ctx_t();
-  decoder_config_ = new vpx_codec_dec_cfg();
+  codec_context_.reset(new vpx_codec_ctx_t());
+  decoder_config_.reset(new vpx_codec_dec_cfg());
   decoder_config_->threads = 1;
   decoder_config_->w = static_cast<unsigned int>(frameWidth);
   decoder_config_->h = static_cast<unsigned int>(frameHeight);
 
-  long long ret = vpx_codec_dec_init(codec_context_, vpx_codec_vp8_dx(), decoder_config_, 0);
+  long long ret = vpx_codec_dec_init(codec_context_.get(), vpx_codec_vp8_dx(), decoder_config_.get(), 0);
   if (ret) {
     STREAM_LOG_ERROR("Failed to initialize VPX context. Error No.:%lld", ret);
     return false;
@@ -39,14 +37,14 @@ bool SoftwareDecoder::initialize(int frameWidth, int frameHeight) {
 
 void SoftwareDecoder::decode(uint8_t* buffer, uint64_t size) {
   assert(codec_context_);
-  const vpx_codec_err_t err = vpx_codec_decode(codec_context_, buffer, size, NULL, 0);
+  const vpx_codec_err_t err = vpx_codec_decode(codec_context_.get(), buffer, size, NULL, 0);
   if (err != VPX_CODEC_OK) {
     STREAM_LOG_ERROR("Failed to decode frame, VPX error code:%d", err);
     return;
   }
   vpx_codec_iter_t iter = NULL;
   vpx_image_t* image = NULL;
-  while ((image = vpx_codec_get_frame(codec_context_, &iter)) != NULL) {
+  while ((image = vpx_codec_get_frame(codec_context_.get(), &iter)) != NULL) {
     assert(VPX_IMG_FMT_I420 == image->fmt);
 
     cv::Mat i420;

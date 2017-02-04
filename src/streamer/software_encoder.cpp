@@ -10,20 +10,14 @@
 namespace vpx_streamer {
 
 SoftwareEncoder::SoftwareEncoder(EncoderDelegate* delegate)
-  : Encoder(delegate), codec_context_(NULL), encoder_config_(NULL), frame_count_(0),
-    keyframe_forced_interval_(4) {
+  : Encoder(delegate), frame_count_(0), keyframe_forced_interval_(4) {
 }
 
 SoftwareEncoder::~SoftwareEncoder() {
   if (codec_context_) {
-    if (VPX_CODEC_OK != vpx_codec_destroy(codec_context_)) {
+    if (VPX_CODEC_OK != vpx_codec_destroy(codec_context_.get())) {
       STREAM_LOG_ERROR("Failed to destroy VPX encoder context.");
     }
-    delete codec_context_;
-  }
-
-  if (encoder_config_) {
-    delete encoder_config_;
   }
 }
 
@@ -49,13 +43,13 @@ void SoftwareEncoder::encode(const cv::Mat& mat) {
   vpx_codec_iter_t iter = NULL;
   const vpx_codec_cx_pkt_t *pkt = NULL;
 
-  const vpx_codec_err_t ret = vpx_codec_encode(codec_context_, &image,
+  const vpx_codec_err_t ret = vpx_codec_encode(codec_context_.get(), &image,
      0, 1, flags, VPX_DL_REALTIME);
   if (ret != VPX_CODEC_OK) {
     return;
   }
 
-  while ((pkt = vpx_codec_get_cx_data(codec_context_, &iter)) != NULL) {
+  while ((pkt = vpx_codec_get_cx_data(codec_context_.get(), &iter)) != NULL) {
     if (pkt->kind == VPX_CODEC_CX_FRAME_PKT) {
       bool keyframe = (pkt->data.frame.flags & VPX_FRAME_IS_KEY) != 0;
       delegate_->onWriteFrame(reinterpret_cast<uint8_t*>(pkt->data.frame.buf), pkt->data.frame.sz, ++frame_count_, keyframe);
@@ -70,8 +64,8 @@ bool SoftwareEncoder::initialize(int frameWidth, int frameHeight) {
 
   vpx_codec_err_t ret;
   if (!encoder_config_) {
-    encoder_config_ = new vpx_codec_enc_cfg();
-    ret = vpx_codec_enc_config_default(vpx_codec_vp8_cx(), encoder_config_, 0);
+    encoder_config_.reset(new vpx_codec_enc_cfg());
+    ret = vpx_codec_enc_config_default(vpx_codec_vp8_cx(), encoder_config_.get(), 0);
     if (ret) {
       STREAM_LOG_ERROR("Failed to get default encoder configuration. Error No.: %d", ret);
       return false;
@@ -81,8 +75,8 @@ bool SoftwareEncoder::initialize(int frameWidth, int frameHeight) {
   encoder_config_->g_w = frameWidth;
   encoder_config_->g_h = frameHeight;
 
-  codec_context_ = new vpx_codec_ctx_t();
-  ret = vpx_codec_enc_init(codec_context_, vpx_codec_vp8_cx(), encoder_config_, 0);
+  codec_context_.reset(new vpx_codec_ctx_t());
+  ret = vpx_codec_enc_init(codec_context_.get(), vpx_codec_vp8_cx(), encoder_config_.get(), 0);
   if (ret) {
     STREAM_LOG_ERROR("Failed to initialize VPX encoder. Error No.:%d", ret);
     return false;
@@ -97,8 +91,8 @@ bool SoftwareEncoder::initialized() {
 void SoftwareEncoder::configure(const EncoderConfig& config) {
   vpx_codec_err_t ret;
   if (!encoder_config_) {
-    encoder_config_ = new vpx_codec_enc_cfg();
-    ret = vpx_codec_enc_config_default(vpx_codec_vp8_cx(), encoder_config_, 0);
+    encoder_config_.reset(new vpx_codec_enc_cfg());
+    ret = vpx_codec_enc_config_default(vpx_codec_vp8_cx(), encoder_config_.get(), 0);
     if (ret) {
       STREAM_LOG_ERROR("Failed to get default encoder configuration. Error No.: %d", ret);
     }
@@ -109,7 +103,7 @@ void SoftwareEncoder::configure(const EncoderConfig& config) {
   keyframe_forced_interval_ = config.keyframe_forced_interval;
 
   if (codec_context_) {
-    ret = vpx_codec_enc_config_set(codec_context_, encoder_config_);
+    ret = vpx_codec_enc_config_set(codec_context_.get(), encoder_config_.get());
     if (ret) {
       STREAM_LOG_ERROR("Failed to update codec configuration. Error No.:%d", ret);
     }

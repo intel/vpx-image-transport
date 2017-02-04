@@ -5,6 +5,7 @@
 #ifndef YAMI_ENCODER_H
 #define YAMI_ENCODER_H
 
+#include <boost/shared_ptr.hpp>
 #include <cv_bridge/cv_bridge.h>
 #include <va/va.h>
 #include <VideoEncoderInterface.h>
@@ -28,8 +29,8 @@ private:
                       int frame_width, int frame_height);
 
 private:
-  YamiMediaCodec::IVideoEncoder* encoder_;
-  SharedPtr<NativeDisplay> native_display_;
+  boost::shared_ptr<YamiMediaCodec::IVideoEncoder> encoder_;
+  boost::shared_ptr<NativeDisplay> native_display_;
   uint32_t max_output_buf_size_;
   uint32_t keyframe_forced_interval_;
   uint64_t frame_count_;

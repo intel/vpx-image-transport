@@ -5,6 +5,7 @@
 #ifndef SOFTWARE_ENCODER_H
 #define SOFTWARE_ENCODER_H
 
+#include <boost/shared_ptr.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <vpx/vpx_encoder.h>
 #include "encoder.h"
@@ -23,8 +24,8 @@ public:
   virtual void connect();
 
 private:
-  vpx_codec_ctx_t* codec_context_;
-  vpx_codec_enc_cfg_t* encoder_config_;
+  boost::shared_ptr<vpx_codec_ctx_t> codec_context_;
+  boost::shared_ptr<vpx_codec_enc_cfg_t> encoder_config_;
   uint64_t frame_count_;
   unsigned int keyframe_forced_interval_;
 };

@@ -12,13 +12,12 @@ using namespace webm_tools;
 using namespace mkvmuxer;
 
 StreamMuxer::StreamMuxer(StreamMuxerDelegate* delegate)
-  : delegate_(delegate), muxer_(NULL), encoder_(codec_factory_.createEncoder(this)) {
+  : delegate_(delegate), encoder_(codec_factory_.createEncoder(this)) {
 }
 
 StreamMuxer::~StreamMuxer() {
   if (muxer_) {
     muxer_->Finalize();
-    delete muxer_;
   }
 }
 
@@ -30,10 +29,7 @@ void StreamMuxer::configure(const EncoderConfig& config) {
 
 void StreamMuxer::connect() {
   encoder_->connect();
-  if (muxer_) {
-    delete muxer_;
-  }
-  muxer_ = new webm_tools::WebMLiveMuxer();
+  muxer_.reset(new webm_tools::WebMLiveMuxer());
 }
 
 void StreamMuxer::disconnect() {

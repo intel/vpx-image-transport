@@ -71,20 +71,17 @@ bool StreamBufferManager::load(const std::vector<uint8_t>& payload) {
 }
 
 StreamParser::StreamParser(StreamParserDelegate* delegate)
-  : delegate_(delegate), webm_file_(NULL), bytes_consumed_(0), track_(NULL),
-    current_block_(NULL) {
+  : delegate_(delegate), bytes_consumed_(0), track_(NULL), current_block_(NULL) {
   buffer_.reserve(RESERVED_BUFFER_SIZE);
   decoder_.reset(codec_factory_.createDecoder(this));
 }
 
 StreamParser::~StreamParser() {
-  if (webm_file_)
-    delete webm_file_;
 }
 
 void StreamParser::decodeStream(const std::vector<uint8_t>& buffer) {
   if (!webm_file_) {
-    webm_file_ = new webm_tools::WebMFile();
+    webm_file_.reset(new webm_tools::WebMFile());
   }
 
   StreamBufferManager manager(this);
@@ -100,13 +97,11 @@ void StreamParser::decodeStream(const std::vector<uint8_t>& buffer) {
     }
 
     assert(tracks->GetTracksCount() == 1);
-    const Track* track = tracks->GetTrackByIndex(0);
-    if (!track) {
+    track_ = dynamic_cast<const VideoTrack*>(tracks->GetTrackByIndex(0));
+    if (!track_) {
       STREAM_LOG_WARN("Failed to get first track in tracks, will retry.");
       return;
     }
-    assert(track->GetType() == Track::kVideo);
-    track_ = dynamic_cast<const VideoTrack*>(track);
   }
 
   const BlockEntry* current = NULL;

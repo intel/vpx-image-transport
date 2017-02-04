@@ -4,6 +4,7 @@
 
 #include "hardware_decoder.h"
 
+#include <boost/scoped_ptr.hpp>
 #include <va/va_x11.h>
 #include <VideoDecoderHost.h>
 #include "stream_logger.h"
@@ -12,15 +13,14 @@ namespace vpx_streamer {
 
 HardwareDecoder::HardwareDecoder(DecoderDelegate* delegate, VADisplay vaDisplay,
                                  NativeDisplay* nativeDisplay)
-  : Decoder(delegate), yami_decoder_(NULL), va_display_(vaDisplay),
-    native_display_(nativeDisplay) {
+  : Decoder(delegate), va_display_(vaDisplay), native_display_(nativeDisplay) {
 }
 
 HardwareDecoder::~HardwareDecoder() {
 }
 
 bool HardwareDecoder::initialize(int frameWidth, int frameHeight) {
-  yami_decoder_ = createVideoDecoder(YAMI_MIME_VP8);
+  yami_decoder_.reset(createVideoDecoder(YAMI_MIME_VP8));
   if (!yami_decoder_) {
     STREAM_LOG_ERROR("Failed to create yami decoder with mime type: %s.", YAMI_MIME_VP8);
     return false;
@@ -42,11 +42,11 @@ bool HardwareDecoder::initialize(int frameWidth, int frameHeight) {
 void HardwareDecoder::decode(uint8_t* buffer, uint64_t size) {
   assert(yami_decoder_);
 
-  VideoDecodeBuffer input_buffer;
-  input_buffer.data = buffer;
-  input_buffer.size = size;
+  boost::scoped_ptr<VideoDecodeBuffer> input_buffer(new VideoDecodeBuffer());
+  input_buffer->data = buffer;
+  input_buffer->size = size;
 
-  Decode_Status status = yami_decoder_->decode(&input_buffer);
+  Decode_Status status = yami_decoder_->decode(input_buffer.get());
   if (status == DECODE_SUCCESS) {
     while (true) {
       SharedPtr<VideoFrame> frame = yami_decoder_->getOutput();

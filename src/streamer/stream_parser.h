@@ -29,7 +29,7 @@ public:
 private:
   StreamParserDelegate* delegate_;
 
-  webm_tools::WebMFile* webm_file_;
+  boost::shared_ptr<webm_tools::WebMFile> webm_file_;
   std::vector<uint8_t> buffer_;
   uint64_t bytes_consumed_;
 

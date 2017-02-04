@@ -33,7 +33,7 @@ private:
                             uint64_t timeStamp, bool isKeyFrame);
 
   StreamMuxerDelegate* delegate_;
-  webm_tools::WebMLiveMuxer* muxer_;
+  boost::shared_ptr<webm_tools::WebMLiveMuxer> muxer_;
   CodecFactory codec_factory_;
   boost::shared_ptr<Encoder> encoder_;
 };
