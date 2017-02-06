@@ -166,6 +166,14 @@ include_directories(
   ${source_dir}/../../../libyami/src/libyami-build/include/libyami
 )
 
+set(DEFENSIVE_COMPILE_FLAGS "-O2 -D_FORTIFY_SOURCE=2 -Wformat -Wformat-security -fPIE -fPIC -fstack-protector-strong")
+set(DEFENSIVE_LINK_FLAGS "-z noexecstack -z relro -z now")
+
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${DEFENSIVE_COMPILE_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${DEFENSIVE_COMPILE_FLAGS}")
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${DEFENSIVE_LINK_FLAGS}")
+
+
 link_directories(${PC_VPX_LIBRARY_DIRS})
 add_definitions(${PC_VPX_CFLAGS_OTHER})
 
