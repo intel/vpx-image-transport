@@ -6,9 +6,12 @@
 #define STREAM_MUXER_H
 
 #include <boost/shared_ptr.hpp>
-#include <webm_live_muxer.h>
 #include "codec_factory.h"
 #include "encoder.h"
+
+namespace webm_tools {
+  class WebMLiveMuxer;
+}
 
 namespace vpx_streamer {
 

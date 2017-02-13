@@ -5,7 +5,9 @@
 #include "stream_parser.h"
 
 #include <algorithm>
+#include <mkvparser/mkvparser.h>
 #include <opencv2/imgproc/imgproc.hpp>
+#include <webm_file.h>
 #include "stream_logger.h"
 
 namespace vpx_streamer {

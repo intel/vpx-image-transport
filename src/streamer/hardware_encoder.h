@@ -6,7 +6,6 @@
 #define YAMI_ENCODER_H
 
 #include <boost/shared_ptr.hpp>
-#include <cv_bridge/cv_bridge.h>
 #include <va/va.h>
 #include <VideoEncoderInterface.h>
 #include "encoder.h"
