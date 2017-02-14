@@ -6,11 +6,18 @@
 #define STREAM_PARSER_H
 
 #include <boost/shared_ptr.hpp>
-#include <mkvparser/mkvparser.h>
 #include <vector>
-#include <webm_file.h>
 #include "codec_factory.h"
 #include "decoder.h"
+
+namespace mkvparser {
+  class BlockEntry;
+  class VideoTrack;
+}
+
+namespace webm_tools {
+  class WebMFile;
+}
 
 namespace vpx_streamer {
 

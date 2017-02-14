@@ -4,6 +4,7 @@
 
 #include "stream_muxer.h"
 
+#include <webm_live_muxer.h>
 #include "stream_logger.h"
 
 namespace vpx_streamer {

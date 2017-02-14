@@ -20,30 +20,11 @@ find_package(catkin REQUIRED COMPONENTS
   cv_bridge
 )
 
+add_subdirectory(src/streamer)
+
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 find_package(PkgConfig)
-pkg_check_modules(PC_VPX REQUIRED vpx)
-pkg_check_modules(PC_LIBVA REQUIRED libva)
-
-ExternalProject_Add(webm-tools
-  PREFIX third_party/webm-tools
-  GIT_REPOSITORY https://github.com/webmproject/webm-tools.git
-  GIT_TAG master
-  PATCH_COMMAND git apply ${CMAKE_CURRENT_SOURCE_DIR}/webm-tools.patch
-  BUILD_COMMAND make -j8
-)
-ExternalProject_Get_Property(webm-tools binary_dir source_dir)
-
-ExternalProject_Add(libyami
-  PREFIX third_party/libyami
-  GIT_REPOSITORY https://github.com/01org/libyami.git
-  GIT_TAG libyami-1.0.1
-  CONFIGURE_COMMAND ${source_dir}/../../../libyami/src/libyami/autogen.sh --prefix=${source_dir}/../../../libyami/src/libyami-build --enable-vp8enc --enable-vp8dec
-  BUILD_COMMAND make -j8
-  BUILD_IN_SOURCE 1
-  INSTALL_COMMAND make install
-)
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -142,7 +123,6 @@ catkin_package(
 #  DEPENDS system_lib
 )
 
-
 ###########
 ## Build ##
 ###########
@@ -156,15 +136,6 @@ include_directories(
   src/streamer
   ${catkin_INCLUDE_DIRS}
 )
-include_directories(SYSTEM
-  ${PC_VPX_INCLUDE_DIRS}
-  ${OpenCV_INCLUDE_DIRS}
-)
-include_directories(
-  ${source_dir}/shared
-  ${source_dir}/../webm-tools-build/libwebm/src/libwebm
-  ${source_dir}/../../../libyami/src/libyami-build/include/libyami
-)
 
 set(DEFENSIVE_COMPILE_FLAGS "-O2 -D_FORTIFY_SOURCE=2 -Wformat -Wformat-security -fPIE -fPIC -fstack-protector-strong")
 set(DEFENSIVE_LINK_FLAGS "-z noexecstack -z relro -z now")
@@ -174,9 +145,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${DEFENSIVE_COMPILE_FLAGS}")
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${DEFENSIVE_LINK_FLAGS}")
 
 
-link_directories(${PC_VPX_LIBRARY_DIRS})
-add_definitions(${PC_VPX_CFLAGS_OTHER})
-
 ## Declare a C++ library
 # add_library(vpx_image_transport
 #   src/${PROJECT_NAME}/vpx_image_transport.cpp
@@ -185,14 +153,6 @@ add_library(${PROJECT_NAME}
   src/vpx_publisher.cpp
   src/vpx_subscriber.cpp
   src/manifest.cpp
-  src/streamer/codec_factory.cpp
-  src/streamer/hardware_encoder.cpp
-  src/streamer/hardware_decoder.cpp
-  src/streamer/software_encoder.cpp
-  src/streamer/software_decoder.cpp
-  src/streamer/stream_logger.cpp
-  src/streamer/stream_muxer.cpp
-  src/streamer/stream_parser.cpp
 )
 
 ## Add cmake target dependencies of the library
@@ -200,7 +160,7 @@ add_library(${PROJECT_NAME}
 ## either from message generation or dynamic reconfigure
 # add_dependencies(vpx_image_transport ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_gencfg ${PROJECT_NAME}_gencpp)
-add_dependencies(${PROJECT_NAME} webm-tools libyami)
+add_dependencies(${PROJECT_NAME} webm-tools libyami vpx-streamer)
 
 ## Declare a C++ executable
 # add_executable(vpx_image_transport_node src/vpx_image_transport_node.cpp)
@@ -214,10 +174,7 @@ add_dependencies(${PROJECT_NAME} webm-tools libyami)
 #   ${catkin_LIBRARIES}
 # )
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES}
-                                      ${PC_VPX_LIBRARIES}
-                                      ${OpenCV_LIBRARIES}
-                                      ${binary_dir}/libwebm-tools.so
-                                      ${binary_dir}/../../../libyami/src/libyami-build/lib/libyami.so
+                                      ${vpx_streamer_LIBRARIES}
 )
 
 #############
