@@ -42,11 +42,14 @@ void HardwareEncoder::fillVideoFrame(VideoFrameRawData* frame, const cv::Mat& ma
   }
 }
 
-void HardwareEncoder::encode(const cv::Mat& mat) {
+void HardwareEncoder::encode(const cv::Mat& mat, bool isBgr) {
   assert(encoder_);
 
   cv::Mat input;
-  cv::cvtColor(mat, input, cv::COLOR_BGR2YUV_I420);
+  if (isBgr)
+    cv::cvtColor(mat, input, cv::COLOR_BGR2YUV_I420);
+  else
+    cv::cvtColor(mat, input, cv::COLOR_RGB2YUV_I420);
 
   VideoFrameRawData input_buffer;
   memset(&input_buffer, 0, sizeof(input_buffer));

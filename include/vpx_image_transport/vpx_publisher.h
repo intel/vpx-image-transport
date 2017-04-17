@@ -39,6 +39,7 @@ protected:
 
   // StreamMuxerDelegate implementation
   virtual void onChunkReady(std::vector<uint8_t>& buffer);
+  virtual void onChunkReadyRawData(uint8_t* buffer, int32_t length) {};
 
 private:
   // Dynamic reconfigure support

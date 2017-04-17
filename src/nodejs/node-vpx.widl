@@ -1,0 +1,13 @@
+dictionary EncoderOptions {
+    long bitRate;
+    long keyFrameForcedInterval;
+};
+
+interface VPXEncoder {
+  Promise<void> config(EncoderOptions options);
+  Promise<void> encode(ArrayBuffer rawData, long width, long height);
+};
+
+partial interface Module {
+  static Promise<VPXEncoder> createEncoder(optional EncoderOptions encoderOptions);
+};

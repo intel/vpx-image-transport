@@ -32,7 +32,7 @@ ExternalProject_Add(libyami
   INSTALL_COMMAND make install
 )
 
-set(DEFENSIVE_COMPILE_FLAGS "-O2 -D_FORTIFY_SOURCE=2 -Wformat -Wformat-security -fPIE -fPIC -fstack-protector-strong")
+set(DEFENSIVE_COMPILE_FLAGS "-std=c++11 -O2 -D_FORTIFY_SOURCE=2 -Wformat -Wformat-security -fPIE -fPIC -fstack-protector-strong")
 set(DEFENSIVE_LINK_FLAGS "-z noexecstack -z relro -z now")
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${DEFENSIVE_COMPILE_FLAGS}")

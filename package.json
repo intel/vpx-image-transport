@@ -1,0 +1,24 @@
+{
+  "name": "node-vpx",
+  "version": "0.0.1",
+  "description": "Node.js addon for encoding raw images to vpx video stream",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/01org/vpx-image-transport.git"
+  },
+  "author": "Ting Shao <ting.shao@intel.com>",
+  "license": "MIT",
+  "dependencies": {
+    "bindings": "^1.2.1",
+    "nan": "^2.4.0",
+    "widl-nan": "^0.1.23"
+  },
+  "devDependencies": {
+    "spawn-npm-install": "^1.2.0",
+    "tmp": "0.0.31"
+  }
+}

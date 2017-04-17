@@ -1,0 +1,45 @@
+<html>
+  <head>
+    <title>RealSense vpx video displayer</title>
+  </head>
+  <body>
+    <video id='displayVideo' autoplay width='640' height='480'>
+    </video>
+    <script>
+    let displayVideo;
+    let ms;
+    let sourceBuffer;
+    function setupMediaSource() {
+      const mimeType = 'video/webm; codecs="vp8"';
+      if (!MediaSource.isTypeSupported(mimeType)) {
+        console.error(`mimetype:${mimeType} is not supported.`);
+      }
+
+      ms = new MediaSource();
+      displayVideo.src = window.URL.createObjectURL(ms);
+
+      sourceBuffer = null;
+      ms.addEventListener('sourceopen', (e) => {
+        sourceBuffer = ms.addSourceBuffer(mimeType);
+        let ws = new WebSocket('ws://10.238.156.118:8000');
+        ws.binaryType = 'arraybuffer';
+        ws.onmessage = function(event) {
+          let time = new Date();
+          feedData(event.data);
+        };
+      });
+      ms.addEventListener('sourceended', (e) => {
+        ms.endOfStream();
+        displayVideo.play();
+      });
+    }
+    function feedData (data) {
+      if (sourceBuffer) {
+        sourceBuffer.appendBuffer(new Uint8Array(data));
+      }
+    };
+    displayVideo = document.getElementById('displayVideo');
+    setupMediaSource();
+    </script>    
+  </body>
+</html>

@@ -19,7 +19,7 @@ public:
 
   virtual bool initialize(int frameWidth, int frameHeight);
   virtual bool initialized();
-  virtual void encode(const cv::Mat& mat);
+  virtual void encode(const cv::Mat& mat, bool isBgr);
   virtual void connect();
   virtual void disconnect();
 

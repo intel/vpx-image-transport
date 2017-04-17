@@ -10,7 +10,7 @@
 namespace vpx_streamer {
 
 SoftwareEncoder::SoftwareEncoder(EncoderDelegate* delegate)
-  : Encoder(delegate), frame_count_(0), keyframe_forced_interval_(4) {
+    : Encoder(delegate), frame_count_(0), keyframe_forced_interval_(4) {
 }
 
 SoftwareEncoder::~SoftwareEncoder() {
@@ -21,12 +21,15 @@ SoftwareEncoder::~SoftwareEncoder() {
   }
 }
 
-void SoftwareEncoder::encode(const cv::Mat& mat) {
+void SoftwareEncoder::encode(const cv::Mat& mat, bool isBgr) {
   assert(codec_context_);
 
   // Convert image to i420 color space used by vpx
   cv::Mat i420;
-  cv::cvtColor(mat, i420, cv::COLOR_BGR2YUV_I420);
+  if (isBgr)
+    cv::cvtColor(mat, i420, cv::COLOR_BGR2YUV_I420);
+  else
+    cv::cvtColor(mat, i420, cv::COLOR_RGB2YUV_I420);
 
   vpx_image_t image;
 
@@ -52,7 +55,11 @@ void SoftwareEncoder::encode(const cv::Mat& mat) {
   while ((pkt = vpx_codec_get_cx_data(codec_context_.get(), &iter)) != NULL) {
     if (pkt->kind == VPX_CODEC_CX_FRAME_PKT) {
       bool keyframe = (pkt->data.frame.flags & VPX_FRAME_IS_KEY) != 0;
-      delegate_->onWriteFrame(reinterpret_cast<uint8_t*>(pkt->data.frame.buf), pkt->data.frame.sz, ++frame_count_, keyframe);
+      std::chrono::high_resolution_clock::time_point time = std::chrono::high_resolution_clock::now();
+      auto elapsed = time - start_time_;
+      uint64_t passed_time = std::chrono::duration_cast<std::chrono::nanoseconds>(elapsed).count();
+      frame_count_++;
+      delegate_->onWriteFrame(reinterpret_cast<uint8_t*>(pkt->data.frame.buf), pkt->data.frame.sz, passed_time, keyframe);
     } else {
       STREAM_LOG_INFO("pkt->kind: %d", pkt->kind);
     }
@@ -112,6 +119,7 @@ void SoftwareEncoder::configure(const EncoderConfig& config) {
 
 void SoftwareEncoder::connect() {
   frame_count_ = 0;
+  start_time_ = std::chrono::high_resolution_clock::now();
 }
 
 } // namespace vpx_streamer
