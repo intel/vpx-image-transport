@@ -14,8 +14,9 @@ let addon = require('node-librealsense')
 let vpx = require('../../..');
 
 let encoderOptions = {
-  bitRate: 9024000000,
-  keyFrameForcedInterval: 4
+  bitRate: 1024,
+  keyFrameForcedInterval: 4,
+  frameRate: 15
 };
 
 let pt;
@@ -24,31 +25,49 @@ let datasend = 0;
 let presend = 0;
 let res = [
   {
+    idx: 0,
+    width: 320,
+    height: 240,
+    rate: 30
+  },
+  {
+    idx: 1,
+    width: 640,
+    height: 480,
+    rate: 15
+  },
+  {
+    idx: 2,
     width: 640,
     height: 480,
     rate: 30
   },
   {
+    idx: 3,
     width: 640,
     height: 480,
     rate: 60
   },
   {
+    idx: 4,
     width: 960,
     height: 540,
     rate: 15
   },
   {
+    idx: 5,
     width: 1280,
     height: 720,
     rate: 15
   },
   {
+    idx: 6,
     width: 1920,
     height: 1080,
     rate: 15
   },
   {
+    idx: 7,
     width: 1920,
     height: 1080,
     rate: 30
@@ -59,8 +78,6 @@ console.log('----supported resolutions:\n', res);
 let resIndex = 0;
 let isJpeg = false;
 let printTime = false;
-if (!isNaN(process.argv[2]))
-  resIndex = process.argv[2];
 
 process.argv.forEach((val, index) => {
   if (val === 'jpg' || val === 'jpeg')
@@ -75,7 +92,8 @@ if (isJpeg)
   console.log('====== JPEG encoding');
 else
   console.log('====== VPX encoding');
-
+encoderOptions.frameRate = res[resIndex].rate;
+console.log('--- encoder options:', encoderOptions);
 
 let context = new addon.Context;
 let camera;
@@ -86,6 +104,7 @@ let mode = {
   framerate: res[resIndex].rate,
 };
 
+console.log('--- camera mode:', mode);
 function encodeToJPEG(buffer, width, height) {
   let options = {
     format: jpeg.FORMAT_RGB,
@@ -111,7 +130,6 @@ function printStreamModes() {
 context.getDevice(0).then((device) => {
   camera = device;
   printStreamModes();
-  console.log('--- camera mode:', mode);
   device.enableStream('color', mode).then(() => {
     device.start().catch((e) => {
       console.log(e);

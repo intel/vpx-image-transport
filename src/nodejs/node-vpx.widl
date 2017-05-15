@@ -1,6 +1,7 @@
 dictionary EncoderOptions {
     long bitRate;
     long keyFrameForcedInterval;
+    long frameRate;
 };
 
 interface VPXEncoder {

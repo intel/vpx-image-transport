@@ -18,6 +18,7 @@ public:
 struct EncoderConfig {
   int target_bitrate;
   int keyframe_forced_interval;
+  int target_framerate;
 };
 
 class Encoder {

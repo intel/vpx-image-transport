@@ -106,6 +106,8 @@ void SoftwareEncoder::configure(const EncoderConfig& config) {
   }
 
   encoder_config_->rc_target_bitrate = config.target_bitrate;
+  encoder_config_->g_timebase.num = 1;
+  encoder_config_->g_timebase.den = config.target_framerate;
   // Keyframe configurations
   keyframe_forced_interval_ = config.keyframe_forced_interval;
 

@@ -12,7 +12,8 @@ namespace vpx_streamer {
 
 HardwareEncoder::HardwareEncoder(EncoderDelegate* delegate, NativeDisplay* display)
   : Encoder(delegate), native_display_(display), max_output_buf_size_(0),
-    keyframe_forced_interval_(4), frame_count_(0) {
+    keyframe_forced_interval_(4), frame_count_(0), target_bitrate_(1024),
+    target_framerate_(15) {
 }
 
 HardwareEncoder::~HardwareEncoder() {
@@ -107,7 +108,10 @@ bool HardwareEncoder::initialize(int frameWidth, int frameHeight) {
   params.resolution.height = frameHeight;
   params.intraPeriod = keyframe_forced_interval_;
   params.rcMode = RATE_CONTROL_CQP;
-  params.rcParams.bitRate = 1024*1024*8;
+  // The input bitrate unit is kb
+  params.rcParams.bitRate = target_bitrate_*1024;
+  params.frameRate.frameRateNum = target_framerate_;
+  params.frameRate.frameRateDenom = 1;
   s = encoder_->setParameters(VideoParamsTypeCommon, &params);
   if (s != YAMI_SUCCESS) {
     STREAM_LOG_ERROR("Failed to set parameters for yami encoder, status code:%d", s);
@@ -148,5 +152,9 @@ void HardwareEncoder::disconnect() {
     }
   }
 }
-
+void HardwareEncoder::configure(const EncoderConfig& config) {
+  target_bitrate_ = config.target_bitrate;
+  target_framerate_ = config.target_framerate;
+  keyframe_forced_interval_ = config.keyframe_forced_interval;
+}
 } // namespace vpx_streamer

@@ -52,7 +52,8 @@ void VPXEncoderDelegate::ConfigStreamer(
   vpx_streamer::EncoderConfig config;
   config.target_bitrate = options.member_bitRate;
   config.keyframe_forced_interval = options.member_keyFrameForcedInterval;
-  DEBUG_INFO("VPXEncoderDelegate::ConfigStreamer, bitrate, interval:", config.target_bitrate, '--', config.keyframe_forced_interval);
+  config.target_framerate = options.member_frameRate;
+  DEBUG_INFO("ConfigStreamer, bitrate/interval/fps:", config.target_bitrate, '/', config.keyframe_forced_interval, '/', config.target_framerate);
   stream_muxer_.configure(config);
 }
 
