@@ -54,7 +54,7 @@ class VPXEncoderDelegate : public vpx_streamer::StreamMuxerDelegate {
   void ConnectStreamMuxer();
   void DisconnectStreamMuxer();
   // merge all of the data segments in encoded_data_segs_ into a single buffer.
-  uint8_t* MergeEncodedDataSegs(uint32_t* total_length);  
+  uint8_t* MergeEncodedDataSegs(uint32_t* total_length);
 
   AsyncTaskRunner* runner_;
   Nan::Persistent<v8::Object> js_this_;

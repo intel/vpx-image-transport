@@ -15,7 +15,7 @@ VPXEncoder::VPXEncoder(const VPXEncoder& rhs) {
 
 VPXEncoder::~VPXEncoder() {
   // TODO(widl-nan): copy from rhs if you want this behavior
-  // Or mark ctor = delete in vpx_encoder.h  
+  // Or mark ctor = delete in vpx_encoder.h
 }
 
 VPXEncoder& VPXEncoder::operator = (const VPXEncoder& rhs) {

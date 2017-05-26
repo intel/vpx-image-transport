@@ -24,6 +24,7 @@ public:
   virtual void connect();
   virtual void disconnect();
   virtual void configure(const EncoderConfig& config);
+  virtual int FigureCQLevel(int quality);
 
 private:
   void fillVideoFrame(VideoFrameRawData* frame, const cv::Mat& mat,
@@ -36,8 +37,8 @@ private:
   uint32_t keyframe_forced_interval_;
   uint64_t frame_count_;
   std::chrono::high_resolution_clock::time_point start_time_;
-  uint64_t target_bitrate_;
   uint32_t target_framerate_;
+  uint32_t quality_;
 };
 
 } // namespace vpx_streamer

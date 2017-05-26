@@ -14,9 +14,9 @@ let addon = require('node-librealsense')
 let vpx = require('../../..');
 
 let encoderOptions = {
-  bitRate: 1024,
-  keyFrameForcedInterval: 4,
-  frameRate: 15
+  keyFrameForcedInterval: 10,
+  frameRate: 15,
+  quality: 80
 };
 
 let pt;
@@ -88,7 +88,7 @@ process.argv.forEach((val, index) => {
     resIndex = val;
 });
 
-if (isJpeg) 
+if (isJpeg)
   console.log('====== JPEG encoding');
 else
   console.log('====== VPX encoding');
@@ -142,10 +142,10 @@ context.getDevice(0).then((device) => {
   encoder.on('video_data', function(data) {
     if (printTime) {
       let time = new Date();
-      console.log('encode finish time:', time.getTime(), '--size:', data.length);    
+      console.log('encode finish time:', time.getTime(), '--size:', data.length);
     }
     sendEncodedData(data);
-  });  
+  });
   startServer();
 }).catch((error) => {
   console.log('error: ' + error);
@@ -240,7 +240,7 @@ function startStreamingEncodedData() {
       imageBuffer = encodeToJPEG(frame.data, res[resIndex].width, res[resIndex].height);
       if (printTime) {
         let time = new Date();
-        console.log('encode finis time:', time.getTime(), '--size:', imageBuffer.length);    
+        console.log('encode finis time:', time.getTime(), '--size:', imageBuffer.length);
       }
 
       sendEncodedData(imageBuffer);

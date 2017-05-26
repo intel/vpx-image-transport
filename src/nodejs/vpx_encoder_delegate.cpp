@@ -50,10 +50,9 @@ void VPXEncoderDelegate::onChunkReadyRawData(uint8_t* buffer, int32_t length) {
 void VPXEncoderDelegate::ConfigStreamer(
     const DictionaryEncoderOptions& options) {
   vpx_streamer::EncoderConfig config;
-  config.target_bitrate = options.member_bitRate;
   config.keyframe_forced_interval = options.member_keyFrameForcedInterval;
   config.target_framerate = options.member_frameRate;
-  DEBUG_INFO("ConfigStreamer, bitrate/interval/fps:", config.target_bitrate, '/', config.keyframe_forced_interval, '/', config.target_framerate);
+  config.quality = options.member_quality;
   stream_muxer_.configure(config);
 }
 
@@ -92,7 +91,7 @@ VPXEncoderDelegate* VPXEncoderDelegate::GetInstance() {
 
 void VPXEncoderDelegate::ConnectStreamMuxer() {
   if (!connected_) {
-    connected_ = true;    
+    connected_ = true;
     stream_muxer_.connect();
   }
 }

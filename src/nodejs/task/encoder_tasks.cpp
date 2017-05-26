@@ -38,7 +38,7 @@ void EncodeTask::WorkerThreadExecute() {
 }
 
 bool EncodeTask::ShouldPopEvent(size_t event_index) {
-  EncodeTaskPayload* payload = GetPayload();  
+  EncodeTaskPayload* payload = GetPayload();
   return payload->delegate_->ShouldPopEvent(event_index);
 }
 

@@ -16,9 +16,9 @@ public:
 };
 
 struct EncoderConfig {
-  int target_bitrate;
   int keyframe_forced_interval;
   int target_framerate;
+  int quality;
 };
 
 class Encoder {
@@ -31,6 +31,7 @@ public:
   virtual void configure(const EncoderConfig& config) {};
   virtual void connect() {};
   virtual void disconnect() {};
+  virtual int FigureCQLevel(int quality) = 0;
 
 protected:
   Encoder(EncoderDelegate* delegate) : delegate_(delegate) {}

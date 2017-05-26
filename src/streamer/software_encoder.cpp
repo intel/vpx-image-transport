@@ -10,7 +10,7 @@
 namespace vpx_streamer {
 
 SoftwareEncoder::SoftwareEncoder(EncoderDelegate* delegate)
-    : Encoder(delegate), frame_count_(0), keyframe_forced_interval_(4) {
+    : Encoder(delegate), frame_count_(0), keyframe_forced_interval_(4), quality_(10) {
 }
 
 SoftwareEncoder::~SoftwareEncoder() {
@@ -70,24 +70,15 @@ bool SoftwareEncoder::initialize(int frameWidth, int frameHeight) {
   assert(!codec_context_);
 
   vpx_codec_err_t ret;
-  if (!encoder_config_) {
-    encoder_config_.reset(new vpx_codec_enc_cfg());
-    ret = vpx_codec_enc_config_default(vpx_codec_vp8_cx(), encoder_config_.get(), 0);
-    if (ret) {
-      STREAM_LOG_ERROR("Failed to get default encoder configuration. Error No.: %d", ret);
-      return false;
-    }
-  }
-
   encoder_config_->g_w = frameWidth;
   encoder_config_->g_h = frameHeight;
-
   codec_context_.reset(new vpx_codec_ctx_t());
   ret = vpx_codec_enc_init(codec_context_.get(), vpx_codec_vp8_cx(), encoder_config_.get(), 0);
   if (ret) {
     STREAM_LOG_ERROR("Failed to initialize VPX encoder. Error No.:%d", ret);
     return false;
   }
+  ret = vpx_codec_control_(codec_context_.get(), VP8E_SET_CQ_LEVEL, quality_);
   return true;
 }
 
@@ -97,6 +88,7 @@ bool SoftwareEncoder::initialized() {
 
 void SoftwareEncoder::configure(const EncoderConfig& config) {
   vpx_codec_err_t ret;
+  quality_ = FigureCQLevel(config.quality);
   if (!encoder_config_) {
     encoder_config_.reset(new vpx_codec_enc_cfg());
     ret = vpx_codec_enc_config_default(vpx_codec_vp8_cx(), encoder_config_.get(), 0);
@@ -104,10 +96,12 @@ void SoftwareEncoder::configure(const EncoderConfig& config) {
       STREAM_LOG_ERROR("Failed to get default encoder configuration. Error No.: %d", ret);
     }
   }
-
-  encoder_config_->rc_target_bitrate = config.target_bitrate;
+  encoder_config_->rc_end_usage = VPX_Q;
+  // encoder_config_->rc_target_bitrate = config.target_bitrate;
   encoder_config_->g_timebase.num = 1;
   encoder_config_->g_timebase.den = config.target_framerate;
+  encoder_config_->rc_min_quantizer = quality_;
+  encoder_config_->rc_max_quantizer = quality_;
   // Keyframe configurations
   keyframe_forced_interval_ = config.keyframe_forced_interval;
 
@@ -116,12 +110,26 @@ void SoftwareEncoder::configure(const EncoderConfig& config) {
     if (ret) {
       STREAM_LOG_ERROR("Failed to update codec configuration. Error No.:%d", ret);
     }
+    ret = vpx_codec_control_(codec_context_.get(), VP8E_SET_CQ_LEVEL, quality_);
+    if (ret) {
+      STREAM_LOG_ERROR("Failed to set CQ_LEVEL. Error No.:%d", ret);
+    }
   }
 }
 
 void SoftwareEncoder::connect() {
   frame_count_ = 0;
   start_time_ = std::chrono::high_resolution_clock::now();
+}
+
+int SoftwareEncoder::FigureCQLevel(int quality) {
+  // For software encoder, the ineternal quality range is [0,63], and default is 10.
+  // the input is from 1 to 100.
+  int result = 10;
+  if (quality < 1 || quality > 100)
+    return result;
+  result = 63-round((quality-1)*63/99);
+  return result;
 }
 
 } // namespace vpx_streamer

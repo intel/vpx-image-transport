@@ -4,16 +4,18 @@
 
 #include "hardware_encoder.h"
 
+#include <math.h>
 #include <va/va_x11.h>
 #include <VideoEncoderHost.h>
+
 #include "stream_logger.h"
 
 namespace vpx_streamer {
 
 HardwareEncoder::HardwareEncoder(EncoderDelegate* delegate, NativeDisplay* display)
   : Encoder(delegate), native_display_(display), max_output_buf_size_(0),
-    keyframe_forced_interval_(4), frame_count_(0), target_bitrate_(1024),
-    target_framerate_(15) {
+    keyframe_forced_interval_(4), frame_count_(0), target_framerate_(15),
+    quality_(70) {
 }
 
 HardwareEncoder::~HardwareEncoder() {
@@ -109,9 +111,12 @@ bool HardwareEncoder::initialize(int frameWidth, int frameHeight) {
   params.intraPeriod = keyframe_forced_interval_;
   params.rcMode = RATE_CONTROL_CQP;
   // The input bitrate unit is kb
-  params.rcParams.bitRate = target_bitrate_*1024;
+  // params.rcParams.bitRate = target_bitrate_*1024;
   params.frameRate.frameRateNum = target_framerate_;
   params.frameRate.frameRateDenom = 1;
+  params.rcParams.minQP = 1;
+  params.rcParams.maxQP = 127;
+  params.rcParams.initQP = FigureCQLevel(quality_);
   s = encoder_->setParameters(VideoParamsTypeCommon, &params);
   if (s != YAMI_SUCCESS) {
     STREAM_LOG_ERROR("Failed to set parameters for yami encoder, status code:%d", s);
@@ -153,8 +158,18 @@ void HardwareEncoder::disconnect() {
   }
 }
 void HardwareEncoder::configure(const EncoderConfig& config) {
-  target_bitrate_ = config.target_bitrate;
   target_framerate_ = config.target_framerate;
   keyframe_forced_interval_ = config.keyframe_forced_interval;
+  quality_ = config.quality;
+}
+
+int HardwareEncoder::FigureCQLevel(int quality) {
+  // For hardware encoder, the ineternal CQ range is (1,127), and default is 40.
+  // the input is from 1 to 100.
+  int result = 40;
+  if (quality < 1 || quality > 100)
+    return result;
+  result = 2 + round((100-quality)*124/99);
+  return result;
 }
 } // namespace vpx_streamer

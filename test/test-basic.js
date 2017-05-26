@@ -19,8 +19,9 @@ inherits(addon.VPXEncoder, EventEmitter);
 describe('VPX Encoder Test Suite - States', function() {
   let encoder = null;
   let options = {
-    bitRate: 300000,
-    keyFrameForceInterval: 10
+    keyFrameForceInterval: 10,
+    frameRate: 15,
+    quality: 80
   };
 
   afterEach(function() {
@@ -67,5 +68,5 @@ describe('VPX Encoder Test Suite - States', function() {
         reject(e);
       });
     });
-  });  
+  });
 });

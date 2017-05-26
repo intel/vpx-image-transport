@@ -23,13 +23,15 @@ public:
   virtual void encode(const cv::Mat& mat, bool isBgr);
   virtual void configure(const EncoderConfig& config);
   virtual void connect();
+  virtual int FigureCQLevel(int quality);
 
 private:
   boost::shared_ptr<vpx_codec_ctx_t> codec_context_;
   boost::shared_ptr<vpx_codec_enc_cfg_t> encoder_config_;
   uint64_t frame_count_;
   std::chrono::high_resolution_clock::time_point start_time_;
-  unsigned int keyframe_forced_interval_;
+  uint32_t keyframe_forced_interval_;
+  uint32_t quality_;
 };
 
 } // namespace vpx_streamer
