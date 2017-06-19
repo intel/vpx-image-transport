@@ -16,20 +16,22 @@ public:
 };
 
 struct EncoderConfig {
-  int target_bitrate;
   int keyframe_forced_interval;
+  int target_framerate;
+  int quality;
 };
 
 class Encoder {
 public:
-  virtual ~Encoder() = 0;
+  virtual ~Encoder() {};
 
   virtual bool initialize(int frameWidth, int frameHeight) = 0;
   virtual bool initialized() = 0;
-  virtual void encode(const cv::Mat& mat) = 0;
+  virtual void encode(const cv::Mat& mat, bool isBgr) = 0;
   virtual void configure(const EncoderConfig& config) {};
   virtual void connect() {};
   virtual void disconnect() {};
+  virtual int FigureCQLevel(int quality) = 0;
 
 protected:
   Encoder(EncoderDelegate* delegate) : delegate_(delegate) {}

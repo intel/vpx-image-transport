@@ -19,7 +19,7 @@ struct DecoderConfig {
 
 class Decoder {
 public:
-  virtual ~Decoder() = 0;
+  virtual ~Decoder() {};
 
   virtual bool initialize(int frameWidth, int frameHeight) = 0;
   virtual bool initialized() = 0;

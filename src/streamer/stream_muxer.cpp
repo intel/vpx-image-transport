@@ -4,6 +4,7 @@
 
 #include "stream_muxer.h"
 
+#include <boost/scoped_ptr.hpp>
 #include <webm_live_muxer.h>
 #include "stream_logger.h"
 
@@ -12,8 +13,10 @@ namespace vpx_streamer {
 using namespace webm_tools;
 using namespace mkvmuxer;
 
-StreamMuxer::StreamMuxer(StreamMuxerDelegate* delegate)
-  : delegate_(delegate), encoder_(codec_factory_.createEncoder(this)) {
+StreamMuxer::StreamMuxer(StreamMuxerDelegate* delegate, bool use_vector)
+    : wrap_chunk_in_vector_(use_vector),
+      delegate_(delegate),
+      encoder_(codec_factory_.createEncoder(this)) {
 }
 
 StreamMuxer::~StreamMuxer() {
@@ -47,7 +50,8 @@ void StreamMuxer::disconnect() {
   encoder_->disconnect();
 }
 
-void StreamMuxer::encodeImage(const cv::Mat& bgr, int frameWidth, int frameHeight) {
+void StreamMuxer::encodeImage(
+    const cv::Mat& bgr, int frameWidth, int frameHeight, bool isBgr) {
   if (!muxer_) {
     STREAM_LOG_WARN("Failed to create muxer, will wait for the connection.");
     return;
@@ -65,22 +69,30 @@ void StreamMuxer::encodeImage(const cv::Mat& bgr, int frameWidth, int frameHeigh
   }
 
   if (encoder_->initialized()) {
-    encoder_->encode(bgr);
+    encoder_->encode(bgr, isBgr);
   }
 
   webm_tools::int32 chunk_length = 0;
   if (!muxer_->ChunkReady(&chunk_length)) {
     return;
   }
-
-  std::vector<uint8_t> buffer = std::vector<uint8_t>(chunk_length);
-  uint8_t* data = buffer.data();
+  uint8_t* data = nullptr;
+  boost::scoped_ptr<std::vector<uint8_t>> buffer;
+  if (wrap_chunk_in_vector_) {
+    buffer.reset(new std::vector<uint8_t>(chunk_length));
+    data = buffer->data();
+  } else {
+    data = static_cast<uint8_t*>(malloc(chunk_length));
+  }
   int ret = muxer_->ReadChunk(chunk_length, data);
   if (WebMLiveMuxer::kSuccess != ret) {
     STREAM_LOG_ERROR("Failed to read chunk with error code: %d", ret);
     return;
   }
-  delegate_->onChunkReady(buffer);
+  if (wrap_chunk_in_vector_)
+    delegate_->onChunkReady(*buffer);
+  else
+    delegate_->onChunkReadyRawData(data, chunk_length);
 }
 
 void StreamMuxer::onWriteFrame(uint8_t* buffer, uint64_t size,

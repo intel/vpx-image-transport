@@ -4,23 +4,29 @@
 
 #include "hardware_encoder.h"
 
+#include <math.h>
 #include <va/va_x11.h>
 #include <VideoEncoderHost.h>
+
 #include "stream_logger.h"
 
 namespace vpx_streamer {
 
 HardwareEncoder::HardwareEncoder(EncoderDelegate* delegate, NativeDisplay* display)
   : Encoder(delegate), native_display_(display), max_output_buf_size_(0),
-    keyframe_forced_interval_(4), frame_count_(0) {
+    keyframe_forced_interval_(4), frame_count_(0), target_framerate_(15),
+    quality_(70) {
 }
 
 HardwareEncoder::~HardwareEncoder() {
   releaseVideoEncoder(encoder_.get());
 }
 
-void HardwareEncoder::fillVideoFrame(VideoFrameRawData* frame, const cv::Mat& mat,
-                                  int frame_width, int frame_height) {
+void HardwareEncoder::fillVideoFrame(VideoFrameRawData* frame,
+                                     const cv::Mat& mat,
+                                     int frame_width,
+                                     int frame_height,
+                                     int64_t time_stamp) {
   assert(frame);
 
   // working solution for yami.
@@ -30,7 +36,7 @@ void HardwareEncoder::fillVideoFrame(VideoFrameRawData* frame, const cv::Mat& ma
   frame->handle = reinterpret_cast<intptr_t>(mat.data);
   frame->size = mat.total();
   frame->memoryType = VIDEO_DATA_MEMORY_TYPE_RAW_POINTER;
-  frame->timeStamp = ++frame_count_;
+  frame->timeStamp = time_stamp;
 
   uint32_t offset = 0;
   for (int i = 0; i < 3; ++i) {
@@ -42,15 +48,24 @@ void HardwareEncoder::fillVideoFrame(VideoFrameRawData* frame, const cv::Mat& ma
   }
 }
 
-void HardwareEncoder::encode(const cv::Mat& mat) {
+void HardwareEncoder::encode(const cv::Mat& mat, bool isBgr) {
   assert(encoder_);
 
   cv::Mat input;
-  cv::cvtColor(mat, input, cv::COLOR_BGR2YUV_I420);
+  if (isBgr)
+    cv::cvtColor(mat, input, cv::COLOR_BGR2YUV_I420);
+  else
+    cv::cvtColor(mat, input, cv::COLOR_RGB2YUV_I420);
+  std::chrono::high_resolution_clock::time_point time =
+      std::chrono::high_resolution_clock::now();
+  auto elapsed = time - start_time_;
+  int64_t passed_time =
+      std::chrono::duration_cast<std::chrono::nanoseconds>(elapsed).count();
 
   VideoFrameRawData input_buffer;
   memset(&input_buffer, 0, sizeof(input_buffer));
-  fillVideoFrame(&input_buffer, input, mat.size().width, mat.size().height);
+  fillVideoFrame(
+      &input_buffer, input, mat.size().width, mat.size().height, passed_time);
 
   YamiStatus status = encoder_->encode(&input_buffer);
   if (status != ENCODE_SUCCESS) {
@@ -95,7 +110,13 @@ bool HardwareEncoder::initialize(int frameWidth, int frameHeight) {
   params.resolution.height = frameHeight;
   params.intraPeriod = keyframe_forced_interval_;
   params.rcMode = RATE_CONTROL_CQP;
-  params.rcParams.bitRate = 5000;
+  // The input bitrate unit is kb
+  // params.rcParams.bitRate = target_bitrate_*1024;
+  params.frameRate.frameRateNum = target_framerate_;
+  params.frameRate.frameRateDenom = 1;
+  params.rcParams.minQP = 1;
+  params.rcParams.maxQP = 127;
+  params.rcParams.initQP = FigureCQLevel(quality_);
   s = encoder_->setParameters(VideoParamsTypeCommon, &params);
   if (s != YAMI_SUCCESS) {
     STREAM_LOG_ERROR("Failed to set parameters for yami encoder, status code:%d", s);
@@ -123,6 +144,7 @@ void HardwareEncoder::connect() {
     }
   }
   frame_count_ = 0;
+  start_time_ = std::chrono::high_resolution_clock::now();
 }
 
 void HardwareEncoder::disconnect() {
@@ -135,5 +157,19 @@ void HardwareEncoder::disconnect() {
     }
   }
 }
+void HardwareEncoder::configure(const EncoderConfig& config) {
+  target_framerate_ = config.target_framerate;
+  keyframe_forced_interval_ = config.keyframe_forced_interval;
+  quality_ = config.quality;
+}
 
+int HardwareEncoder::FigureCQLevel(int quality) {
+  // For hardware encoder, the ineternal CQ range is (1,127), and default is 40.
+  // the input is from 1 to 100.
+  int result = 40;
+  if (quality < 1 || quality > 100)
+    return result;
+  result = 2 + round((100-quality)*124/99);
+  return result;
+}
 } // namespace vpx_streamer
