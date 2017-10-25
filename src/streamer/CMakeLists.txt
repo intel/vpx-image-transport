@@ -15,7 +15,7 @@ pkg_check_modules(PC_LIBVA REQUIRED libva)
 ExternalProject_Add(webm-tools
   PREFIX third_party/webm-tools
   GIT_REPOSITORY https://github.com/webmproject/webm-tools.git
-  GIT_TAG master
+  GIT_TAG 538dc2d55ea10d5507e1eb353b463bfc34f34b07
   PATCH_COMMAND git apply ${CMAKE_CURRENT_SOURCE_DIR}/webm-tools.patch
   BUILD_COMMAND make -j8
   INSTALL_COMMAND ""
