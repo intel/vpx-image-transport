@@ -4,7 +4,7 @@
   "version": "0.0.1",
   "main": "index.html",
   "dependencies": {
-    "rosnodejs": "git+https://github.com/RethinkRobotics-opensource/rosnodejs#5b17210"
+    "rosnodejs": "^2.1.1"
   },
   "engines": {
     "node": ">= 5.10.0"

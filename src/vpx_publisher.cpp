@@ -39,8 +39,9 @@ void VPXPublisher::advertiseImpl(ros::NodeHandle &nh,
 void VPXPublisher::configCallback(Config& config, uint32_t level) {
   EncoderConfig conf;
 
-  conf.target_bitrate = config.target_bitrate;
   conf.keyframe_forced_interval = config.keyframe_forced_interval;
+  conf.target_framerate = config.target_framerate;
+  conf.quality = config.quality;
 
   stream_muxer_.configure(conf);
 }
