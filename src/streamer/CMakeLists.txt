@@ -25,7 +25,7 @@ ExternalProject_Get_Property(webm-tools binary_dir source_dir)
 ExternalProject_Add(libyami
   PREFIX third_party/libyami
   GIT_REPOSITORY https://github.com/01org/libyami.git
-  GIT_TAG libyami-1.0.1
+  GIT_TAG libyami-1.3.0
   CONFIGURE_COMMAND ${source_dir}/../../../libyami/src/libyami/autogen.sh --prefix=${source_dir}/../../../libyami/src/libyami-build --enable-vp8enc --enable-vp8dec
   BUILD_COMMAND make -j8
   BUILD_IN_SOURCE 1
