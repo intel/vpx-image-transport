@@ -32,7 +32,7 @@ index 90d6525..a25b10c 100644
 +ExternalProject_Add(libwebm
 +  PREFIX libwebm
 +  GIT_REPOSITORY https://github.com/webmproject/libwebm.git
-+  GIT_TAG master
++  GIT_TAG 686664eba24acb78c221fbd3b3cb7fb4fdeaf230
 +  PATCH_COMMAND git apply ${CMAKE_CURRENT_SOURCE_DIR}/libwebm.patch
 +  INSTALL_COMMAND ""
 +)
